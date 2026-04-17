@@ -15,9 +15,45 @@ public class DatabaseSignatureRepository(IDbConnection connection) : IDatabaseSi
     {
         await EnsureOpenAsync(ct);
 
-        // Assinatura determinística baseada no schema (tabelas/colunas/constraints principais).
-        // Não depende de dados das tabelas, só da estrutura.
-        var rows = await _connection.QueryAsync<SchemaRow>(
+        var rows = await QuerySchemaRowsAsync(tableNames: null, ct);
+        return ComputeSha256Signature(rows);
+    }
+
+    public async Task<string> GetSchemaSignatureForTablesAsync(IReadOnlyCollection<string> tableNames, CancellationToken ct = default)
+    {
+        if (tableNames is null || tableNames.Count == 0)
+            return string.Empty;
+
+        await EnsureOpenAsync(ct);
+        var rows = await QuerySchemaRowsAsync(tableNames, ct);
+        return ComputeSha256Signature(rows);
+    }
+
+    private async Task<IEnumerable<SchemaRow>> QuerySchemaRowsAsync(IReadOnlyCollection<string>? tableNames, CancellationToken ct)
+    {
+        if (tableNames is null)
+        {
+            return await _connection.QueryAsync<SchemaRow>(
+                new CommandDefinition(
+                    """
+                    SELECT
+                        c.TABLE_NAME       AS TableName,
+                        c.COLUMN_NAME      AS ColumnName,
+                        c.ORDINAL_POSITION AS OrdinalPosition,
+                        c.COLUMN_TYPE      AS ColumnType,
+                        c.IS_NULLABLE      AS IsNullable,
+                        c.COLUMN_DEFAULT   AS ColumnDefault,
+                        c.EXTRA            AS Extra,
+                        c.COLLATION_NAME   AS CollationName,
+                        c.CHARACTER_SET_NAME AS CharacterSetName
+                    FROM INFORMATION_SCHEMA.COLUMNS c
+                    WHERE c.TABLE_SCHEMA = DATABASE()
+                    ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION, c.COLUMN_NAME
+                    """,
+                    cancellationToken: ct));
+        }
+
+        return await _connection.QueryAsync<SchemaRow>(
             new CommandDefinition(
                 """
                 SELECT
@@ -32,10 +68,15 @@ public class DatabaseSignatureRepository(IDbConnection connection) : IDatabaseSi
                     c.CHARACTER_SET_NAME AS CharacterSetName
                 FROM INFORMATION_SCHEMA.COLUMNS c
                 WHERE c.TABLE_SCHEMA = DATABASE()
+                  AND c.TABLE_NAME IN @TableNames
                 ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION, c.COLUMN_NAME
                 """,
+                new { TableNames = tableNames },
                 cancellationToken: ct));
+    }
 
+    private static string ComputeSha256Signature(IEnumerable<SchemaRow> rows)
+    {
         using var sha = SHA256.Create();
 
         foreach (var r in rows)
@@ -60,7 +101,6 @@ public class DatabaseSignatureRepository(IDbConnection connection) : IDatabaseSi
             Append(sha, "\u001E");
         }
 
-        // Finaliza
         sha.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
         return Convert.ToHexString(sha.Hash!).ToLowerInvariant();
     }
