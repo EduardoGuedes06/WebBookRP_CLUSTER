@@ -145,6 +145,6 @@ public class PostRepository(IDbConnection connection) : IPostRepository
     private async Task EnsureOpenAsync()
     {
         if (_connection.State != ConnectionState.Open)
-            await _connection.OpenAsync();
+            await ((DbConnection)_connection).OpenAsync();
     }
 }

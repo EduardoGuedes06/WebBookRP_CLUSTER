@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 using Dapper;
 using WebBookRP_API.Interfaces;
 using WebBookRP_API.Models;
@@ -23,6 +24,6 @@ public class SecurityLogRepository(IDbConnection connection) : ISecurityLogRepos
     private async Task EnsureOpenAsync()
     {
         if (_connection.State != ConnectionState.Open)
-            await _connection.OpenAsync();
+            await ((DbConnection)_connection).OpenAsync();
     }
 }
