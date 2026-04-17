@@ -1,0 +1,440 @@
+# WebBookRP API — requisições de exemplo (VS / VS Code REST Client)
+# 1) Execute o login e copie o campo "token" da resposta para @token abaixo (ou use extensão que capture a resposta).
+# 2) Perfis: http → localhost:5028 | https → https://localhost:7292
+
+@WebBookRP_API_HostAddress = http://localhost:5028
+@token = COLE_O_JWT_AQUI
+
+@bookId = 00000000-0000-0000-0000-000000000000
+@serviceId = 00000000-0000-0000-0000-000000000000
+@postId = 1
+@commentId = 1
+@leadId = 1
+
+###############################################################################
+### Autenticação
+###############################################################################
+
+### Login — usuário da tabela Users (doc/insert.sql). Envie email ou username (e-mail).
+POST {{WebBookRP_API_HostAddress}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@gmail.com",
+  "password": "Admin@123"
+}
+
+###
+
+### Logout (stateless: cliente descarta o token)
+POST {{WebBookRP_API_HostAddress}}/auth/logout
+
+###
+
+### Sessão — com token válido retorna authenticated: true
+GET {{WebBookRP_API_HostAddress}}/auth/session
+Authorization: Bearer {{token}}
+
+###
+
+### Sessão — sem token (anônimo)
+GET {{WebBookRP_API_HostAddress}}/auth/session
+
+###############################################################################
+### Livros (A = Authorization)
+###############################################################################
+
+### Listar todos os livros (A)
+GET {{WebBookRP_API_HostAddress}}/books
+Authorization: Bearer {{token}}
+
+###
+
+### Catálogo público (apenas ativos) (P)
+GET {{WebBookRP_API_HostAddress}}/books/catalog
+Accept: application/json
+
+###
+
+### Livro por id — público se ativo (P)
+GET {{WebBookRP_API_HostAddress}}/books/{{bookId}}
+Accept: application/json
+
+###
+
+### Criar livro (A)
+POST {{WebBookRP_API_HostAddress}}/books
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Exemplo de livro",
+  "genre": "Ficção",
+  "price": 49.90,
+  "promoPrice": null,
+  "active": true,
+  "isPromotion": false,
+  "cover": "",
+  "synopsis": "Resumo curto",
+  "coverSynopsis": null,
+  "linkAmazon": null,
+  "linkML": null,
+  "linkShopee": null,
+  "linkGeneric": null,
+  "fullSynopsis": "<p>HTML opcional</p>",
+  "pages": 200,
+  "rating": 4.5,
+  "reviews": 10
+}
+
+###
+
+### Atualizar livro (A)
+PUT {{WebBookRP_API_HostAddress}}/books/{{bookId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Exemplo atualizado",
+  "genre": "Ficção",
+  "price": 39.90,
+  "promoPrice": 29.90,
+  "active": true,
+  "isPromotion": true,
+  "cover": "",
+  "synopsis": "Resumo",
+  "coverSynopsis": null,
+  "linkAmazon": null,
+  "linkML": null,
+  "linkShopee": null,
+  "linkGeneric": null,
+  "fullSynopsis": "<p>Conteúdo</p>",
+  "pages": 200,
+  "rating": 4.7,
+  "reviews": 12
+}
+
+###
+
+### Excluir livro (A)
+DELETE {{WebBookRP_API_HostAddress}}/books/{{bookId}}
+Authorization: Bearer {{token}}
+
+###############################################################################
+### Serviços
+###############################################################################
+
+### Listar serviços ativos (P)
+GET {{WebBookRP_API_HostAddress}}/services
+Accept: application/json
+
+###
+
+### Listar todos (A)
+GET {{WebBookRP_API_HostAddress}}/services/all
+Authorization: Bearer {{token}}
+
+###
+
+### Serviço por id (A)
+GET {{WebBookRP_API_HostAddress}}/services/{{serviceId}}
+Authorization: Bearer {{token}}
+
+###
+
+### Criar serviço (A)
+POST {{WebBookRP_API_HostAddress}}/services
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Consultoria",
+  "price": 150.00,
+  "unit": "hora",
+  "active": true,
+  "isPromotion": false,
+  "promoPrice": null,
+  "icon": "",
+  "theme": "default",
+  "description": "Descrição do serviço"
+}
+
+###
+
+### Atualizar serviço (A)
+PUT {{WebBookRP_API_HostAddress}}/services/{{serviceId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Consultoria Plus",
+  "price": 180.00,
+  "unit": "hora",
+  "active": true,
+  "isPromotion": true,
+  "promoPrice": 150.00,
+  "icon": "",
+  "theme": "default",
+  "description": "Atualizado"
+}
+
+###
+
+### Excluir serviço (A)
+DELETE {{WebBookRP_API_HostAddress}}/services/{{serviceId}}
+Authorization: Bearer {{token}}
+
+###############################################################################
+### Leads
+###############################################################################
+
+### Criar lead público (serviceId deve existir e estar ativo) (P)
+POST {{WebBookRP_API_HostAddress}}/leads
+Content-Type: application/json
+
+{
+  "serviceId": "{{serviceId}}",
+  "name": "Cliente Exemplo",
+  "email": "cliente@exemplo.com",
+  "phone": "11999999999",
+  "description": "Quero mais informações"
+}
+
+###
+
+### Listar leads com paginação e filtros (A)
+GET {{WebBookRP_API_HostAddress}}/leads?page=1&pageSize=20&status=pending&search=
+Authorization: Bearer {{token}}
+
+###
+
+### Lead por id (A)
+GET {{WebBookRP_API_HostAddress}}/leads/{{leadId}}
+Authorization: Bearer {{token}}
+
+###
+
+### Atualizar status do lead (A)
+PATCH {{WebBookRP_API_HostAddress}}/leads/{{leadId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "analyzing"
+}
+
+###
+
+### Atualizar notas internas (A)
+PATCH {{WebBookRP_API_HostAddress}}/leads/{{leadId}}/notes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "notes": "Ligamos para o cliente em 10/04."
+}
+
+###
+
+### Atualizar lead completo (A)
+PUT {{WebBookRP_API_HostAddress}}/leads/{{leadId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "serviceId": "{{serviceId}}",
+  "name": "Cliente Exemplo",
+  "email": "cliente@exemplo.com",
+  "phone": "11999999999",
+  "description": "Atualizado pelo painel",
+  "value": 500.00,
+  "status": "working",
+  "notes": "Proposta enviada"
+}
+
+###
+
+### Excluir lead (A)
+DELETE {{WebBookRP_API_HostAddress}}/leads/{{leadId}}
+Authorization: Bearer {{token}}
+
+###############################################################################
+### Posts e comentários
+###############################################################################
+
+### Listar posts — anônimo: só published | autenticado: ?status=draft etc.
+GET {{WebBookRP_API_HostAddress}}/posts?status=published
+Accept: application/json
+
+###
+
+### Listar posts (autenticado — ver rascunhos)
+GET {{WebBookRP_API_HostAddress}}/posts
+Authorization: Bearer {{token}}
+
+###
+
+### Post por id
+GET {{WebBookRP_API_HostAddress}}/posts/{{postId}}
+Accept: application/json
+
+###
+
+### Criar post (A)
+POST {{WebBookRP_API_HostAddress}}/posts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Novo post",
+  "category": "Geral",
+  "coverType": "solid",
+  "coverColor": "#1e293b",
+  "coverText": "Título",
+  "coverTextColor": "#ffffff",
+  "imageUrl": null,
+  "content": "Conteúdo em markdown ou texto",
+  "externalLink": null,
+  "allowLikes": true,
+  "allowComments": true,
+  "status": "draft"
+}
+
+###
+
+### Atualizar post (A)
+PUT {{WebBookRP_API_HostAddress}}/posts/{{postId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Post atualizado",
+  "category": "Geral",
+  "coverType": "solid",
+  "coverColor": "#1e293b",
+  "coverText": "Título",
+  "coverTextColor": "#ffffff",
+  "imageUrl": null,
+  "content": "Conteúdo",
+  "externalLink": null,
+  "allowLikes": true,
+  "allowComments": true,
+  "status": "published"
+}
+
+###
+
+### Excluir post (A)
+DELETE {{WebBookRP_API_HostAddress}}/posts/{{postId}}
+Authorization: Bearer {{token}}
+
+###
+
+### Alternar like (P) — por IP (post publicado e allowLikes)
+POST {{WebBookRP_API_HostAddress}}/posts/{{postId}}/likes/toggle
+Accept: application/json
+
+###
+
+### Comentar (P) — anônimo: informe guestName | logado: envie Authorization
+POST {{WebBookRP_API_HostAddress}}/posts/{{postId}}/comments
+Content-Type: application/json
+
+{
+  "text": "Ótimo conteúdo!",
+  "guestName": "Visitante"
+}
+
+###
+
+### Marcar author-like no comentário (A)
+PATCH {{WebBookRP_API_HostAddress}}/posts/{{postId}}/comments/{{commentId}}/author-like
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "authorLike": true
+}
+
+###
+
+### Excluir comentário (A)
+DELETE {{WebBookRP_API_HostAddress}}/posts/{{postId}}/comments/{{commentId}}
+Authorization: Bearer {{token}}
+
+###############################################################################
+### Autor e configuração
+###############################################################################
+
+### Perfil do autor + timeline (P)
+GET {{WebBookRP_API_HostAddress}}/author
+Accept: application/json
+
+###
+
+### Atualizar autor + timeline (A)
+PUT {{WebBookRP_API_HostAddress}}/author
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Nome do Autor",
+  "role": "Escritor",
+  "avatarUrl": null,
+  "secondaryImageUrl": null,
+  "bio": "Biografia curta",
+  "timeline": [
+    {
+      "id": null,
+      "year": "2020",
+      "title": "Marco",
+      "description": "Descrição",
+      "sortOrder": 0
+    }
+  ]
+}
+
+###
+
+### Config sistema (A)
+GET {{WebBookRP_API_HostAddress}}/config/system
+Authorization: Bearer {{token}}
+
+###
+
+### Config sistema — salvar JSON (A)
+PUT {{WebBookRP_API_HostAddress}}/config/system
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "value": {
+    "siteName": "WebBookRP",
+    "contactEmail": "contato@exemplo.com"
+  }
+}
+
+###
+
+### Config home (A)
+GET {{WebBookRP_API_HostAddress}}/config/home
+Authorization: Bearer {{token}}
+
+###
+
+### Config home — salvar JSON (A)
+PUT {{WebBookRP_API_HostAddress}}/config/home
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "value": {
+    "heroTitle": "Bem-vindo"
+  }
+}
+
+###
+
+### Estatísticas (StatsConfig) (A)
+GET {{WebBookRP_API_HostAddress}}/stats
+Authorization: Bearer {{token}}
