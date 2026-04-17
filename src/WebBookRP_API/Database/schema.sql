@@ -1,0 +1,136 @@
+-- WebBookRP MySQL schema (UTF8MB4)
+SET NAMES utf8mb4;
+SET time_zone = '+00:00';
+
+CREATE TABLE IF NOT EXISTS books (
+  Id CHAR(36) NOT NULL PRIMARY KEY,
+  Title VARCHAR(500) NOT NULL,
+  Genre VARCHAR(200) NULL,
+  Price DECIMAL(18,2) NOT NULL DEFAULT 0,
+  PromoPrice DECIMAL(18,2) NULL,
+  Active TINYINT(1) NOT NULL DEFAULT 1,
+  IsPromotion TINYINT(1) NOT NULL DEFAULT 0,
+  Cover VARCHAR(2000) NULL,
+  Synopsis TEXT NULL,
+  CoverSynopsis TEXT NULL,
+  LinkAmazon VARCHAR(2000) NULL,
+  LinkML VARCHAR(2000) NULL,
+  LinkShopee VARCHAR(2000) NULL,
+  LinkGeneric VARCHAR(2000) NULL,
+  FullSynopsis LONGTEXT NULL,
+  Pages INT NOT NULL DEFAULT 0,
+  Rating DECIMAL(10,2) NOT NULL DEFAULT 0,
+  Reviews INT NOT NULL DEFAULT 0,
+  CreatedAtUtc DATETIME(6) NOT NULL,
+  UpdatedAtUtc DATETIME(6) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS services (
+  Id CHAR(36) NOT NULL PRIMARY KEY,
+  Name VARCHAR(500) NOT NULL,
+  Price DECIMAL(18,2) NOT NULL DEFAULT 0,
+  Unit VARCHAR(100) NULL,
+  Active TINYINT(1) NOT NULL DEFAULT 1,
+  IsPromotion TINYINT(1) NOT NULL DEFAULT 0,
+  PromoPrice DECIMAL(18,2) NULL,
+  Icon VARCHAR(2000) NULL,
+  Theme VARCHAR(200) NULL,
+  Description TEXT NULL,
+  CreatedAtUtc DATETIME(6) NOT NULL,
+  UpdatedAtUtc DATETIME(6) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS leads (
+  Id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  ServiceId CHAR(36) NOT NULL,
+  Name VARCHAR(300) NOT NULL,
+  Email VARCHAR(320) NOT NULL,
+  Phone VARCHAR(50) NULL,
+  Description TEXT NULL,
+  Value DECIMAL(18,2) NOT NULL DEFAULT 0,
+  CreatedAtUtc DATETIME(6) NOT NULL,
+  Status VARCHAR(50) NOT NULL,
+  Notes TEXT NULL,
+  CONSTRAINT fk_leads_service FOREIGN KEY (ServiceId) REFERENCES services (Id),
+  INDEX ix_leads_status (Status),
+  INDEX ix_leads_created (CreatedAtUtc)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS posts (
+  Id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  Title VARCHAR(500) NOT NULL,
+  Category VARCHAR(200) NULL,
+  CoverType VARCHAR(100) NULL,
+  CoverColor VARCHAR(100) NULL,
+  CoverText VARCHAR(500) NULL,
+  CoverTextColor VARCHAR(100) NULL,
+  ImageUrl VARCHAR(2000) NULL,
+  Content LONGTEXT NULL,
+  ExternalLink VARCHAR(2000) NULL,
+  AllowLikes TINYINT(1) NOT NULL DEFAULT 1,
+  AllowComments TINYINT(1) NOT NULL DEFAULT 1,
+  Status VARCHAR(50) NOT NULL DEFAULT 'draft',
+  LikesCount INT NOT NULL DEFAULT 0,
+  CreatedAtUtc DATETIME(6) NOT NULL,
+  UpdatedAtUtc DATETIME(6) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS comments (
+  Id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  PostId INT NOT NULL,
+  `Text` TEXT NOT NULL,
+  GuestName VARCHAR(200) NULL,
+  UserId VARCHAR(128) NULL,
+  AuthorLike TINYINT(1) NOT NULL DEFAULT 0,
+  CreatedAtUtc DATETIME(6) NOT NULL,
+  CONSTRAINT fk_comments_post FOREIGN KEY (PostId) REFERENCES posts (Id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS post_like_ips (
+  PostId INT NOT NULL,
+  IpAddress VARCHAR(45) NOT NULL,
+  CreatedAtUtc DATETIME(6) NOT NULL,
+  PRIMARY KEY (PostId, IpAddress),
+  CONSTRAINT fk_post_like_ips_post FOREIGN KEY (PostId) REFERENCES posts (Id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS author_profiles (
+  Id INT NOT NULL PRIMARY KEY,
+  Name VARCHAR(300) NOT NULL,
+  Role VARCHAR(200) NULL,
+  AvatarUrl VARCHAR(2000) NULL,
+  SecondaryImageUrl VARCHAR(2000) NULL,
+  Bio TEXT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS author_timeline (
+  Id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  AuthorId INT NOT NULL,
+  Year VARCHAR(50) NOT NULL,
+  Title VARCHAR(500) NOT NULL,
+  Description TEXT NULL,
+  SortOrder INT NOT NULL DEFAULT 0,
+  CONSTRAINT fk_author_timeline_author FOREIGN KEY (AuthorId) REFERENCES author_profiles (Id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS system_settings (
+  `Key` VARCHAR(100) NOT NULL PRIMARY KEY,
+  ValueJson LONGTEXT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS security_logs (
+  Id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  EmailAttempt VARCHAR(320) NOT NULL,
+  Success TINYINT(1) NOT NULL,
+  IpAddress VARCHAR(45) NULL,
+  UserAgent VARCHAR(500) NULL,
+  CreatedAtUtc DATETIME(6) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO author_profiles (Id, Name, Role, AvatarUrl, SecondaryImageUrl, Bio)
+VALUES (1, 'Autor', '', NULL, NULL, '');
+
+INSERT IGNORE INTO system_settings (`Key`, ValueJson) VALUES
+  ('SystemConfig', '{}'),
+  ('HomeConfig', '{}'),
+  ('StatsConfig', '{}');

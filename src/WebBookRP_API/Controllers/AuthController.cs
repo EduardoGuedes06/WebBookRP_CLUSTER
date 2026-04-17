@@ -1,0 +1,44 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using WebBookRP_API.DTOs;
+using WebBookRP_API.Interfaces;
+
+namespace WebBookRP_API.Controllers;
+
+[ApiController]
+[Route("auth")]
+public class AuthController(IAuthService authService) : ControllerBase
+{
+    private readonly IAuthService _authService = authService;
+
+    [HttpPost("login")]
+    [AllowAnonymous]
+    public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginRequestDto request)
+    {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var ua = Request.Headers.UserAgent.ToString();
+
+        var result = await _authService.LoginAsync(request, ip, ua);
+        if (result is null)
+            return Unauthorized();
+
+        return Ok(result);
+    }
+
+    [HttpPost("logout")]
+    [AllowAnonymous]
+    public IActionResult Logout()
+    {
+        return NoContent();
+    }
+
+    [HttpGet("session")]
+    [AllowAnonymous]
+    public async Task<ActionResult<SessionResponseDto>> Session()
+    {
+        return Ok(await _authService.GetSessionAsync(User));
+    }
+}
