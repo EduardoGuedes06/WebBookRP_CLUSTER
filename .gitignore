@@ -1,0 +1,96 @@
+## Build
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.log
+
+## Visual Studio / VS Code / Cursor
+.vs/
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.pidb
+*.svclog
+*.pdb
+*.opendb
+*.VC.db
+*.VC.VC.opendb
+
+## Visual Studio cache / index
+**/.vs/**/FileContentIndex/
+**/.vs/**/CopilotIndices/
+*.vsidx
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]uild/
+*.dll
+*.exe
+*.appx
+*.appxbundle
+*.msix
+*.msixbundle
+
+## NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Test / coverage
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+*.lcov
+
+## ASP.NET
+**/wwwroot/lib/
+**/App_Data/*.mdf
+**/App_Data/*.ldf
+**/App_Data/*.sdf
+**/ScaffoldingReadMe.txt
+
+## Rider / JetBrains
+.idea/
+*.sln.iml
+
+## macOS / Linux extras
+.DS_Store
+._*
+
+## Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+## Local / secrets (não versionar chaves)
+*.local.json
+secrets.json
+appsettings.*.local.json
+
+## Misc
+*.tmp
+*.temp
+*.cache
+*.swp
+*~
