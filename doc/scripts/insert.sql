@@ -18,8 +18,8 @@ INSERT INTO `Books` (`Id`, `Title`, `Genre`, `Price`, `PromoPrice`, `Active`, `I
 ('b0000000-0000-0000-0000-000000000002', 'Livro Vol.2', 'Thriller', 33.90, 20.00, 1, 1, 'https://placehold.co/300x450/475569/FFF', 290, 4.6, 80);
 
 INSERT INTO `Services` (`Id`, `Name`, `Price`, `PromoPrice`, `Unit`, `Active`, `IsPromotion`, `Icon`, `Theme`) VALUES 
-('s0000000-0000-0000-0000-000000000001', 'Design de Capa', 800.00, NULL, NULL, 1, 0, 'ph-paint-brush-broad', 'purple'),
-('s0000000-0000-0000-0000-000000000002', 'Revisão Textual', 0.05, 0.03, 'p/ palavra', 1, 1, 'ph-text-aa', 'blue');
+('50000000-0000-0000-0000-000000000001', 'Design de Capa', 800.00, NULL, NULL, 1, 0, 'ph-paint-brush-broad', 'purple'),
+('50000000-0000-0000-0000-000000000002', 'Revisão Textual', 0.05, 0.03, 'p/ palavra', 1, 1, 'ph-text-aa', 'blue');
 
 INSERT INTO `Posts` (`Id`, `Title`, `Category`, `CoverColor`, `CoverText`, `Status`, `LikesCount`) VALUES 
 (1, 'Como venci o bloqueio criativo', 'Escrita', '1e293b', 'Bloqueio Criativo', 'published', 142),
