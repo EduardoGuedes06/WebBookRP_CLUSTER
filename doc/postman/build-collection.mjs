@@ -54,7 +54,7 @@ const collection = {
     { key: "loginEmail", value: "admin@gmail.com" },
     { key: "loginPassword", value: "Admin@123" },
     { key: "bookId", value: "b0000000-0000-0000-0000-000000000001" },
-    { key: "serviceId", value: "s0000000-0000-0000-0000-000000000001" },
+    { key: "serviceId", value: "50000000-0000-0000-0000-000000000001" },
     { key: "postId", value: "1" },
     { key: "commentId", value: "1" },
     { key: "leadId", value: "1" },
