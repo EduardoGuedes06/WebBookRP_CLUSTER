@@ -19,13 +19,25 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("Default", policy =>
+    options.AddPolicy("AllowFrontEnd", policy =>
     {
-        policy.AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowAnyOrigin();
+        policy.WithOrigins(
+                  "http://localhost:3000",
+                  "https://localhost:3000"
+              )
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy("Default", policy =>
+//    {
+//        policy.AllowAnyHeader()
+//            .AllowAnyMethod()
+//            .AllowAnyOrigin();
+//    });
+//});
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
                        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' não encontrada.");
@@ -41,6 +53,7 @@ builder.Services.AddScoped<IAuthorRepository, AuthorRepository>();
 builder.Services.AddScoped<ISystemSettingsRepository, SystemSettingsRepository>();
 builder.Services.AddScoped<ISecurityLogRepository, SecurityLogRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IDatabaseSignatureRepository, DatabaseSignatureRepository>();
 
 builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IServiceItemService, ServiceItemService>();
@@ -75,8 +88,15 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
-app.UseCors("Default");
+app.UseCors("AllowFrontEnd");
+
+// Em dev, o front normalmente chama HTTP (localhost:3000 -> http://localhost:5028).
+// Redirecionamento HTTP->HTTPS causa falha no preflight (OPTIONS).
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

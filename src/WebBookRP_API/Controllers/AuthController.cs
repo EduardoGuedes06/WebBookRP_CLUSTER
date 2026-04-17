@@ -7,9 +7,10 @@ namespace WebBookRP_API.Controllers;
 
 [ApiController]
 [Route("auth")]
-public class AuthController(IAuthService authService) : ControllerBase
+public class AuthController(IAuthService authService, IDatabaseSignatureRepository databaseSignatureRepository) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
+    private readonly IDatabaseSignatureRepository _databaseSignatureRepository = databaseSignatureRepository;
 
     [HttpPost("login")]
     [AllowAnonymous]
@@ -40,5 +41,13 @@ public class AuthController(IAuthService authService) : ControllerBase
     public async Task<ActionResult<SessionResponseDto>> Session()
     {
         return Ok(await _authService.GetSessionAsync(User));
+    }
+
+    [HttpGet("assinatura")]
+    [Authorize]
+    public async Task<ActionResult<object>> Assinatura(CancellationToken ct)
+    {
+        var signature = await _databaseSignatureRepository.GetCurrentDatabaseSignatureAsync(ct);
+        return Ok(new { signature });
     }
 }
