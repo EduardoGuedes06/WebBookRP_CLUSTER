@@ -14,7 +14,7 @@ public class LeadRepository(IDbConnection connection) : ILeadRepository
     {
         await EnsureOpenAsync();
         const string sql = """
-            INSERT INTO leads (ServiceId, Name, Email, Phone, Description, Value, CreatedAtUtc, Status, Notes)
+            INSERT INTO Leads (ServiceId, Name, Email, Phone, Description, AgreedValue, CreatedAt, Status, InternalNotes)
             VALUES (@ServiceId, @Name, @Email, @Phone, @Description, @Value, @CreatedAtUtc, @Status, @Notes);
             SELECT LAST_INSERT_ID();
             """;
@@ -26,8 +26,8 @@ public class LeadRepository(IDbConnection connection) : ILeadRepository
         await EnsureOpenAsync();
         return await _connection.QueryFirstOrDefaultAsync<Lead>(
             """
-            SELECT Id, ServiceId, Name, Email, Phone, Description, Value, CreatedAtUtc, Status, Notes
-            FROM leads
+            SELECT Id, ServiceId, Name, Email, Phone, Description, AgreedValue AS Value, CreatedAt AS CreatedAtUtc, Status, InternalNotes AS Notes
+            FROM Leads
             WHERE Id = @Id
             """,
             new { Id = id });
@@ -50,16 +50,16 @@ public class LeadRepository(IDbConnection connection) : ILeadRepository
               )
             """;
 
-        var countSql = $"SELECT COUNT(1) FROM leads {whereClause}";
+        var countSql = $"SELECT COUNT(1) FROM Leads {whereClause}";
         var total = await _connection.QuerySingleAsync<int>(
             countSql,
             new { Status = status, Like = like });
 
         var dataSql = $"""
-            SELECT Id, ServiceId, Name, Email, Phone, Description, Value, CreatedAtUtc, Status, Notes
-            FROM leads
+            SELECT Id, ServiceId, Name, Email, Phone, Description, AgreedValue AS Value, CreatedAt AS CreatedAtUtc, Status, InternalNotes AS Notes
+            FROM Leads
             {whereClause}
-            ORDER BY CreatedAtUtc DESC
+            ORDER BY CreatedAt DESC
             LIMIT @Take OFFSET @Skip
             """;
 
@@ -75,15 +75,15 @@ public class LeadRepository(IDbConnection connection) : ILeadRepository
         await EnsureOpenAsync();
         return await _connection.ExecuteAsync(
             """
-            UPDATE leads SET
+            UPDATE Leads SET
                 ServiceId = @ServiceId,
                 Name = @Name,
                 Email = @Email,
                 Phone = @Phone,
                 Description = @Description,
-                Value = @Value,
+                AgreedValue = @Value,
                 Status = @Status,
-                Notes = @Notes
+                InternalNotes = @Notes
             WHERE Id = @Id
             """,
             lead);
@@ -93,7 +93,7 @@ public class LeadRepository(IDbConnection connection) : ILeadRepository
     {
         await EnsureOpenAsync();
         return await _connection.ExecuteAsync(
-            "UPDATE leads SET Status = @Status WHERE Id = @Id",
+            "UPDATE Leads SET Status = @Status WHERE Id = @Id",
             new { Id = id, Status = status });
     }
 
@@ -101,14 +101,14 @@ public class LeadRepository(IDbConnection connection) : ILeadRepository
     {
         await EnsureOpenAsync();
         return await _connection.ExecuteAsync(
-            "UPDATE leads SET Notes = @Notes WHERE Id = @Id",
+            "UPDATE Leads SET InternalNotes = @Notes WHERE Id = @Id",
             new { Id = id, Notes = notes });
     }
 
     public async Task<int> DeleteAsync(int id)
     {
         await EnsureOpenAsync();
-        return await _connection.ExecuteAsync("DELETE FROM leads WHERE Id = @Id", new { Id = id });
+        return await _connection.ExecuteAsync("DELETE FROM Leads WHERE Id = @Id", new { Id = id });
     }
 
     private async Task EnsureOpenAsync()

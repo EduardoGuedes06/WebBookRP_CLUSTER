@@ -15,13 +15,13 @@
 ### Autenticação
 ###############################################################################
 
-### Login (admin / admin) — gera JWT e registra security_logs
+### Login — usuário da tabela Users (doc/insert.sql). Envie email ou username (e-mail).
 POST {{WebBookRP_API_HostAddress}}/auth/login
 Content-Type: application/json
 
 {
-  "username": "admin",
-  "password": "admin"
+  "email": "admin@gmail.com",
+  "password": "Admin@123"
 }
 
 ###

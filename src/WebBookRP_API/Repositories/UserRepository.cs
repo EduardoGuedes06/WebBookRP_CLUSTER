@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 using Dapper;
 using WebBookRP_API.Interfaces;
@@ -6,19 +6,21 @@ using WebBookRP_API.Models;
 
 namespace WebBookRP_API.Repositories;
 
-public class SecurityLogRepository(IDbConnection connection) : ISecurityLogRepository
+public class UserRepository(IDbConnection connection) : IUserRepository
 {
     private readonly IDbConnection _connection = connection;
 
-    public async Task<int> InsertAsync(SecurityLog log)
+    public async Task<User?> GetByEmailAsync(string email)
     {
         await EnsureOpenAsync();
-        return await _connection.ExecuteAsync(
+        return await _connection.QueryFirstOrDefaultAsync<User>(
             """
-            INSERT INTO SecurityLogs (EmailAttempt, Success, IpAddress, UserAgent, CreatedAt)
-            VALUES (@EmailAttempt, @Success, @IpAddress, @UserAgent, @CreatedAtUtc)
+            SELECT Id, Name, Email, PasswordHash, Role, CreatedAt
+            FROM Users
+            WHERE LOWER(TRIM(Email)) = LOWER(TRIM(@Email))
+            LIMIT 1
             """,
-            log);
+            new { Email = email });
     }
 
     private async Task EnsureOpenAsync()

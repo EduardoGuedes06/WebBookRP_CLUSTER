@@ -1,7 +1,9 @@
 
 -- CARGA DE DADOS (MOCK)
-INSERT INTO `Users` (`Id`, `Name`, `Email`, `PasswordHash`, `Role`) VALUES 
-('d2c20a8c-8b8a-4f5b-9d41-5825a07c6f08', 'Eduardo', 'admin@gmail.com', '$2a$11$N.Z./aG0/qBXZ.eJ0Z/y.e/X8G2n/oR7zQ2mZ/P7L2iM1P/g5y38K', 'Admin');
+-- Senha de desenvolvimento: Admin@123 (BCrypt cost 11).
+-- Novo hash: na raiz do repositório execute: dotnet run --project tools/BcryptQuick -- "SuaSenha"
+INSERT INTO `Users` (`Id`, `Name`, `Email`, `PasswordHash`, `Role`) VALUES
+('d2c20a8c-8b8a-4f5b-9d41-5825a07c6f08', 'Eduardo', 'admin@gmail.com', '$2a$11$VGRT7qNyZgiCwn14LOE./ui8btIFmVFG0s424010qHppg7oleGxIq', 'Admin');
 
 INSERT INTO `AuthorProfile` (`Id`, `Name`, `Role`, `AvatarUrl`, `SecondaryImageUrl`, `Bio`) VALUES 
 (1, 'Ronaldo Pereira', 'Escritor de Ficção Especulativa', 'https://placehold.co/600x800/1e293b/FFF?text=Autor+Pro', 'https://placehold.co/300x300/d97706/FFF?text=Família', 'Olá! Sou o Ronaldo. Minha jornada começou devorando livros na biblioteca.');
@@ -27,6 +29,7 @@ INSERT INTO `Comments` (`PostId`, `GuestName`, `Text`) VALUES
 (1, 'Carlos M.', 'Ótima dica!'),
 (1, 'Ana Clara', 'Vou testar hoje.');
 
-INSERT INTO `SystemSettings` (`ConfigKey`, `ConfigValue`) VALUES 
+INSERT INTO `SystemSettings` (`ConfigKey`, `ConfigValue`) VALUES
 ('SystemConfig', '{"maxActiveProjects": 4, "enableNotifications": true, "autoReply": false, "currency": "BRL", "adminName": "Ronaldo Pereira"}'),
-('HomeConfig', '{"heroBookId": "b0000000-0000-0000-0000-000000000001", "showLaunchBadge": true, "quote": {"text": "Escrever é a única forma...", "author": "Ronaldo Pereira"}}');
+('HomeConfig', '{"heroBookId": "b0000000-0000-0000-0000-000000000001", "showLaunchBadge": true, "quote": {"text": "Escrever é a única forma...", "author": "Ronaldo Pereira"}}'),
+('StatsConfig', '{"booksSold": 0, "activeReaders": 0, "averageRating": 0}');

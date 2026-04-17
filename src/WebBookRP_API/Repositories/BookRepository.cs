@@ -15,11 +15,19 @@ public class BookRepository(IDbConnection connection) : IBookRepository
         await EnsureOpenAsync();
         var rows = await _connection.QueryAsync<Book>(
             """
-            SELECT Id, Title, Genre, Price, PromoPrice, Active, IsPromotion, Cover, Synopsis, CoverSynopsis,
-                   LinkAmazon, LinkML, LinkShopee, LinkGeneric, FullSynopsis, Pages, Rating, Reviews,
-                   CreatedAtUtc, UpdatedAtUtc
-            FROM books
-            ORDER BY CreatedAtUtc DESC
+            SELECT Id, Title, Genre, Price, PromoPrice, Active, IsPromotion,
+                   CoverUrl AS Cover,
+                   CAST(NULL AS CHAR) AS Synopsis,
+                   CoverSynopsis, FullSynopsis,
+                   CAST(NULL AS CHAR) AS LinkAmazon,
+                   CAST(NULL AS CHAR) AS LinkML,
+                   CAST(NULL AS CHAR) AS LinkShopee,
+                   CAST(NULL AS CHAR) AS LinkGeneric,
+                   Pages, Rating, ReviewsCount AS Reviews,
+                   CreatedAt AS CreatedAtUtc,
+                   CreatedAt AS UpdatedAtUtc
+            FROM Books
+            ORDER BY CreatedAt DESC
             """);
         return rows.ToList();
     }
@@ -29,12 +37,20 @@ public class BookRepository(IDbConnection connection) : IBookRepository
         await EnsureOpenAsync();
         var rows = await _connection.QueryAsync<Book>(
             """
-            SELECT Id, Title, Genre, Price, PromoPrice, Active, IsPromotion, Cover, Synopsis, CoverSynopsis,
-                   LinkAmazon, LinkML, LinkShopee, LinkGeneric, FullSynopsis, Pages, Rating, Reviews,
-                   CreatedAtUtc, UpdatedAtUtc
-            FROM books
+            SELECT Id, Title, Genre, Price, PromoPrice, Active, IsPromotion,
+                   CoverUrl AS Cover,
+                   CAST(NULL AS CHAR) AS Synopsis,
+                   CoverSynopsis, FullSynopsis,
+                   CAST(NULL AS CHAR) AS LinkAmazon,
+                   CAST(NULL AS CHAR) AS LinkML,
+                   CAST(NULL AS CHAR) AS LinkShopee,
+                   CAST(NULL AS CHAR) AS LinkGeneric,
+                   Pages, Rating, ReviewsCount AS Reviews,
+                   CreatedAt AS CreatedAtUtc,
+                   CreatedAt AS UpdatedAtUtc
+            FROM Books
             WHERE Active = 1
-            ORDER BY Title
+            ORDER BY Title ASC
             """);
         return rows.ToList();
     }
@@ -44,10 +60,18 @@ public class BookRepository(IDbConnection connection) : IBookRepository
         await EnsureOpenAsync();
         return await _connection.QueryFirstOrDefaultAsync<Book>(
             """
-            SELECT Id, Title, Genre, Price, PromoPrice, Active, IsPromotion, Cover, Synopsis, CoverSynopsis,
-                   LinkAmazon, LinkML, LinkShopee, LinkGeneric, FullSynopsis, Pages, Rating, Reviews,
-                   CreatedAtUtc, UpdatedAtUtc
-            FROM books
+            SELECT Id, Title, Genre, Price, PromoPrice, Active, IsPromotion,
+                   CoverUrl AS Cover,
+                   CAST(NULL AS CHAR) AS Synopsis,
+                   CoverSynopsis, FullSynopsis,
+                   CAST(NULL AS CHAR) AS LinkAmazon,
+                   CAST(NULL AS CHAR) AS LinkML,
+                   CAST(NULL AS CHAR) AS LinkShopee,
+                   CAST(NULL AS CHAR) AS LinkGeneric,
+                   Pages, Rating, ReviewsCount AS Reviews,
+                   CreatedAt AS CreatedAtUtc,
+                   CreatedAt AS UpdatedAtUtc
+            FROM Books
             WHERE Id = @Id
             """,
             new { Id = id });
@@ -58,14 +82,12 @@ public class BookRepository(IDbConnection connection) : IBookRepository
         await EnsureOpenAsync();
         return await _connection.ExecuteAsync(
             """
-            INSERT INTO books (
-                Id, Title, Genre, Price, PromoPrice, Active, IsPromotion, Cover, Synopsis, CoverSynopsis,
-                LinkAmazon, LinkML, LinkShopee, LinkGeneric, FullSynopsis, Pages, Rating, Reviews,
-                CreatedAtUtc, UpdatedAtUtc
+            INSERT INTO Books (
+                Id, Title, Genre, Price, PromoPrice, Active, IsPromotion, 
+                CoverUrl, CoverSynopsis, FullSynopsis, Pages, Rating, ReviewsCount
             ) VALUES (
-                @Id, @Title, @Genre, @Price, @PromoPrice, @Active, @IsPromotion, @Cover, @Synopsis, @CoverSynopsis,
-                @LinkAmazon, @LinkML, @LinkShopee, @LinkGeneric, @FullSynopsis, @Pages, @Rating, @Reviews,
-                @CreatedAtUtc, @UpdatedAtUtc
+                @Id, @Title, @Genre, @Price, @PromoPrice, @Active, @IsPromotion, 
+                @Cover, @CoverSynopsis, @FullSynopsis, @Pages, @Rating, @Reviews
             )
             """,
             book);
@@ -76,25 +98,19 @@ public class BookRepository(IDbConnection connection) : IBookRepository
         await EnsureOpenAsync();
         return await _connection.ExecuteAsync(
             """
-            UPDATE books SET
+            UPDATE Books SET
                 Title = @Title,
                 Genre = @Genre,
                 Price = @Price,
                 PromoPrice = @PromoPrice,
                 Active = @Active,
                 IsPromotion = @IsPromotion,
-                Cover = @Cover,
-                Synopsis = @Synopsis,
+                CoverUrl = @Cover,
                 CoverSynopsis = @CoverSynopsis,
-                LinkAmazon = @LinkAmazon,
-                LinkML = @LinkML,
-                LinkShopee = @LinkShopee,
-                LinkGeneric = @LinkGeneric,
                 FullSynopsis = @FullSynopsis,
                 Pages = @Pages,
                 Rating = @Rating,
-                Reviews = @Reviews,
-                UpdatedAtUtc = @UpdatedAtUtc
+                ReviewsCount = @Reviews
             WHERE Id = @Id
             """,
             book);
@@ -103,7 +119,7 @@ public class BookRepository(IDbConnection connection) : IBookRepository
     public async Task<int> DeleteAsync(Guid id)
     {
         await EnsureOpenAsync();
-        return await _connection.ExecuteAsync("DELETE FROM books WHERE Id = @Id", new { Id = id });
+        return await _connection.ExecuteAsync("DELETE FROM Books WHERE Id = @Id", new { Id = id });
     }
 
     private async Task EnsureOpenAsync()

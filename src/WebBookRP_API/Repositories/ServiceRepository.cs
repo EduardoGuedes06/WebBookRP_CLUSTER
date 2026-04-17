@@ -15,11 +15,12 @@ public class ServiceRepository(IDbConnection connection) : IServiceRepository
         await EnsureOpenAsync();
         var rows = await _connection.QueryAsync<ServiceItem>(
             """
-            SELECT Id, Name, Price, Unit, Active, IsPromotion, PromoPrice, Icon, Theme, Description,
-                   CreatedAtUtc, UpdatedAtUtc
-            FROM services
+            SELECT Id, Name, Price, PromoPrice, Unit, Active, IsPromotion, Icon, Theme, Description,
+                   CreatedAt AS CreatedAtUtc,
+                   CreatedAt AS UpdatedAtUtc
+            FROM Services
             WHERE Active = 1
-            ORDER BY Name
+            ORDER BY Name ASC
             """);
         return rows.ToList();
     }
@@ -29,10 +30,11 @@ public class ServiceRepository(IDbConnection connection) : IServiceRepository
         await EnsureOpenAsync();
         var rows = await _connection.QueryAsync<ServiceItem>(
             """
-            SELECT Id, Name, Price, Unit, Active, IsPromotion, PromoPrice, Icon, Theme, Description,
-                   CreatedAtUtc, UpdatedAtUtc
-            FROM services
-            ORDER BY Name
+            SELECT Id, Name, Price, PromoPrice, Unit, Active, IsPromotion, Icon, Theme, Description,
+                   CreatedAt AS CreatedAtUtc,
+                   CreatedAt AS UpdatedAtUtc
+            FROM Services
+            ORDER BY Name ASC
             """);
         return rows.ToList();
     }
@@ -42,9 +44,10 @@ public class ServiceRepository(IDbConnection connection) : IServiceRepository
         await EnsureOpenAsync();
         return await _connection.QueryFirstOrDefaultAsync<ServiceItem>(
             """
-            SELECT Id, Name, Price, Unit, Active, IsPromotion, PromoPrice, Icon, Theme, Description,
-                   CreatedAtUtc, UpdatedAtUtc
-            FROM services
+            SELECT Id, Name, Price, PromoPrice, Unit, Active, IsPromotion, Icon, Theme, Description,
+                   CreatedAt AS CreatedAtUtc,
+                   CreatedAt AS UpdatedAtUtc
+            FROM Services
             WHERE Id = @Id
             """,
             new { Id = id });
@@ -55,12 +58,10 @@ public class ServiceRepository(IDbConnection connection) : IServiceRepository
         await EnsureOpenAsync();
         return await _connection.ExecuteAsync(
             """
-            INSERT INTO services (
-                Id, Name, Price, Unit, Active, IsPromotion, PromoPrice, Icon, Theme, Description,
-                CreatedAtUtc, UpdatedAtUtc
+            INSERT INTO Services (
+                Id, Name, Price, PromoPrice, Unit, Active, IsPromotion, Icon, Theme, Description
             ) VALUES (
-                @Id, @Name, @Price, @Unit, @Active, @IsPromotion, @PromoPrice, @Icon, @Theme, @Description,
-                @CreatedAtUtc, @UpdatedAtUtc
+                @Id, @Name, @Price, @PromoPrice, @Unit, @Active, @IsPromotion, @Icon, @Theme, @Description
             )
             """,
             item);
@@ -71,17 +72,16 @@ public class ServiceRepository(IDbConnection connection) : IServiceRepository
         await EnsureOpenAsync();
         return await _connection.ExecuteAsync(
             """
-            UPDATE services SET
+            UPDATE Services SET
                 Name = @Name,
                 Price = @Price,
+                PromoPrice = @PromoPrice,
                 Unit = @Unit,
                 Active = @Active,
                 IsPromotion = @IsPromotion,
-                PromoPrice = @PromoPrice,
                 Icon = @Icon,
                 Theme = @Theme,
-                Description = @Description,
-                UpdatedAtUtc = @UpdatedAtUtc
+                Description = @Description
             WHERE Id = @Id
             """,
             item);
@@ -90,7 +90,7 @@ public class ServiceRepository(IDbConnection connection) : IServiceRepository
     public async Task<int> DeleteAsync(Guid id)
     {
         await EnsureOpenAsync();
-        return await _connection.ExecuteAsync("DELETE FROM services WHERE Id = @Id", new { Id = id });
+        return await _connection.ExecuteAsync("DELETE FROM Services WHERE Id = @Id", new { Id = id });
     }
 
     private async Task EnsureOpenAsync()

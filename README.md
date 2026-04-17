@@ -7,43 +7,44 @@ API REST em **ASP.NET Core (.NET 10)** com **Dapper**, **MySQL** (via [MySqlConn
 | Caminho | Descrição |
 |---------|-----------|
 | `src/WebBookRP_API/` | Projeto da API Web |
-| `src/WebBookRP_API/Database/schema.sql` | Script de criação das tabelas e dados iniciais mínimos (autor id=1, `system_settings`) |
-| `src/WebBookRP_API/WebBookRP_API.http` | Exemplos de requisições para testar os endpoints no Visual Studio ou REST Client |
+| `src/WebBookRP_API/doc/create.sql` | Script oficial de criação do banco (`WebBookRP_db`) e tabelas |
+| `src/WebBookRP_API/doc/insert.sql` | Carga inicial (usuário, autor, livros, serviços, posts, configs) |
+| `src/WebBookRP_API/doc/migrations/001_post_like_ips.sql` | Opcional: tabela para **toggle de likes por IP** (`POST /posts/{id}/likes/toggle`) |
+| `tools/BcryptQuick/` | Utilitário opcional para gerar `PasswordHash` BCrypt ao atualizar usuários |
+| `src/WebBookRP_API/WebBookRP_API.http` | Exemplos de requisições (REST Client / Visual Studio) |
+| `doc/postman/` | **Collection Postman** + **environment** localhost + script `smoke-test.ps1` (ver `doc/postman/README.md`) |
 
 ## Arquitetura
 
 Camadas simples, com injeção de dependência:
 
-- **`Controllers`** — rotas HTTP, validação de modelo, autorização `[Authorize]` onde o painel exige login.
-- **`Services`** — regras de negócio (catálogo público só ativos, leads públicos com `value`/`status`/`notes` fixos, placeholders de capa/ícone, likes por IP, etc.).
-- **`Repositories`** — acesso a dados com **Dapper** (`QueryAsync`, `ExecuteAsync`, `QueryFirstOrDefaultAsync`), sempre com parâmetros (`@Nome`), nunca SQL concatenado.
-- **`Models`** — entidades alinhadas às tabelas MySQL.
-- **`DTOs`** — contratos de entrada/saída da API (JSON camelCase por padrão do ASP.NET Core).
+- **`Controllers`** — rotas HTTP, validação de modelo, `[Authorize]` no painel.
+- **`Services`** — regras de negócio (catálogo público, leads públicos, placeholders, likes, JWT emitido após validar **Users** + BCrypt).
+- **`Repositories`** — Dapper com parâmetros (`@Param`), nunca SQL concatenado.
+- **`Models`** — entidades alinhadas ao esquema em `doc/create.sql` (PascalCase no MySQL: `Books`, `Users`, etc.).
+- **`DTOs`** — contratos JSON (camelCase padrão do ASP.NET Core).
 - **`Interfaces`** — contratos de repositórios e serviços.
-- **`Configuration`** — opções do JWT (`JwtSettings`).
-- **`Infrastructure`** — constantes compartilhadas (URLs de placeholder para livro/serviço).
+- **`Configuration`** — `JwtSettings`.
+- **`Infrastructure`** — placeholders de mídia.
 
-A conexão MySQL é registrada como **`IDbConnection`** em escopo **Scoped** (uma conexão por requisição), implementada por `MySqlConnection`.
+Conexão **`IDbConnection`** scoped por requisição (`MySqlConnection`).
 
 ## Pré-requisitos
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- Servidor **MySQL** acessível a partir da máquina de desenvolvimento
+- **MySQL** acessível
 
-## Banco de dados
+## Banco de dados (script oficial)
 
-1. Crie o banco (ou use um existente) e aponte a connection string em `src/WebBookRP_API/appsettings.json` (chave `ConnectionStrings:DefaultConnection`).
-2. Execute o script:
+1. Ajuste `ConnectionStrings:DefaultConnection` em `src/WebBookRP_API/appsettings.json` (banco `WebBookRP_db` ou o nome que usar no script).
+2. Execute, **nesta ordem**:
+   - `src/WebBookRP_API/doc/create.sql`
+   - `src/WebBookRP_API/doc/insert.sql`
+3. **Opcional:** para likes por IP funcionarem sem erro, rode também `src/WebBookRP_API/doc/migrations/001_post_like_ips.sql`.
 
-`src/WebBookRP_API/Database/schema.sql`
+Tabelas principais: `Users`, `Books`, `Services`, `Leads`, `Posts`, `Comments`, `AuthorProfile`, `AuthorTimeline`, `SystemSettings`, `SecurityLogs`.
 
-Ele cria tabelas: `books`, `services`, `leads`, `posts`, `comments`, `post_like_ips` (toggle de like por IP), `author_profiles`, `author_timeline`, `system_settings`, `security_logs`.
-
-**Integridade:** `leads.ServiceId` referencia `services.Id` (GUID). Livros e serviços usam **GUID** gerado na API; leads, posts e comentários usam **INT** auto-incremento.
-
-## Como rodar o projeto
-
-Na raiz da API:
+## Como rodar
 
 ```bash
 cd src/WebBookRP_API
@@ -51,22 +52,30 @@ dotnet restore
 dotnet run
 ```
 
-Por padrão o perfil **http** usa `http://localhost:5028` (veja `Properties/launchSettings.json`). Em desenvolvimento o OpenAPI pode estar mapeado em `/openapi/v1.json` conforme configuração do template.
+HTTP padrão: `http://localhost:5028` (`Properties/launchSettings.json`).
 
-## Autenticação JWT
+## Autenticação (tabela `Users` + BCrypt)
 
-Configuração em `appsettings.json`, seção **`Jwt`**:
+- Login busca o usuário por **e-mail** (`Users.Email`), compara a senha com **`PasswordHash`** usando **BCrypt** (`BCrypt.Net-Next`). Hashes que não começam com `$2` caem em verificação texto puro apenas como migração legada (evite em produção).
+- Cada tentativa de login grava em **`SecurityLogs`** (`EmailAttempt`, `Success`, `IpAddress`, `UserAgent`, `CreatedAt`).
+- JWT inclui `sub` / `nameidentifier` = **GUID do usuário**, `name`, `email`, `role` (coluna `Role`).
 
-- `Issuer`, `Audience`, `SigningKey`, `ExpirationMinutes`
+### JWT em `appsettings.json` (seção `Jwt`)
 
-**Importante:** altere `SigningKey` para um segredo longo e aleatório em ambientes reais; a chave precisa ser compatível com HMAC (tamanho adequado).
+Defina `Issuer`, `Audience`, `SigningKey` (segredo longo), `ExpirationMinutes`.
 
-### Credenciais iniciais (desenvolvimento)
+### Credenciais após `doc/insert.sql`
 
-- **Usuário:** `admin`
-- **Senha:** `admin`
+O seed atual define:
 
-Toda tentativa de login é registrada em **`security_logs`** (`EmailAttempt`, `Success`, `IpAddress`, `UserAgent`, `CreatedAtUtc`).
+- **E-mail:** `admin@gmail.com`
+- **Senha:** `Admin@123`  
+  (hash BCrypt cost 11 no `insert.sql`; comentário no arquivo indica como regenerar com `tools/BcryptQuick`.)
+
+Corpo aceito no login:
+
+- `email` **ou** `username` (ambos tratados como identificador de login = e-mail cadastrado).
+- `password` (obrigatório).
 
 ### Exemplo: obter token
 
@@ -75,12 +84,12 @@ POST http://localhost:5028/auth/login
 Content-Type: application/json
 
 {
-  "username": "admin",
-  "password": "admin"
+  "email": "admin@gmail.com",
+  "password": "Admin@123"
 }
 ```
 
-Resposta (campos principais):
+Resposta:
 
 ```json
 {
@@ -90,20 +99,19 @@ Resposta (campos principais):
 }
 ```
 
-Nas rotas protegidas, envie:
+Rotas protegidas:
 
 ```http
 Authorization: Bearer <jwt>
 ```
 
-### Logout e sessão
+### Sessão
 
-- **`POST /auth/logout`** — API stateless; o cliente apenas descarta o token.
-- **`GET /auth/session`** — público; se enviar um JWT válido, reflete o usuário autenticado nos claims.
+- **`GET /auth/session`** — com JWT válido retorna `authenticated`, `userId`, `name`, `email`, `role` e `username` (alias do e-mail para compatibilidade).
 
 ## Endpoints da API
 
-Legenda: **(P)** público (ou comportamento público definido) · **(A)** requer JWT válido (`[Authorize]`).
+Legenda: **(P)** público · **(A)** JWT obrigatório.
 
 ### Autenticação
 
@@ -117,91 +125,80 @@ Legenda: **(P)** público (ou comportamento público definido) · **(A)** requer
 
 | Método | Rota | Auth |
 |--------|------|------|
-| GET | `/books` | (A) lista completa (painel) |
-| GET | `/books/catalog` | (P) apenas `active == true` |
-| GET | `/books/{id}` | (P) detalhe se livro ativo |
+| GET | `/books` | (A) |
+| GET | `/books/catalog` | (P) ativos |
+| GET | `/books/{id}` | (P) se ativo |
 | POST | `/books` | (A) |
 | PUT | `/books/{id}` | (A) |
 | DELETE | `/books/{id}` | (A) |
 
-Regras: catálogo público só ativos; capa vazia recebe URL de placeholder ao criar/atualizar e na serialização pública.
+O modelo SQL não possui colunas de links da API; o repositório devolve `synopsis`/links como nulos nas leituras. Campos extras da API continuam aceitos no POST/PUT onde mapeados no serviço (valores não persistidos se não existirem colunas).
 
 ### Serviços
 
 | Método | Rota | Auth |
 |--------|------|------|
-| GET | `/services` | (P) apenas ativos |
-| GET | `/services/all` | (A) todos |
+| GET | `/services` | (P) ativos |
+| GET | `/services/all` | (A) |
 | GET | `/services/{id}` | (A) |
 | POST | `/services` | (A) |
 | PUT | `/services/{id}` | (A) |
 | DELETE | `/services/{id}` | (A) |
 
-Ícone vazio usa placeholder, análogo aos livros.
-
 ### Leads
 
 | Método | Rota | Auth |
 |--------|------|------|
-| POST | `/leads` | (P) cria lead: `value = 0`, `status = pending`, `notes` vazio; valida `serviceId` (GUID) existente e ativo |
-| GET | `/leads` | (A) paginação: `page`, `pageSize`, filtros `status`, `search` (Dapper + LIMIT/OFFSET) |
+| POST | `/leads` | (P) |
+| GET | `/leads` | (A) paginação `page`, `pageSize`, `status`, `search` |
 | GET | `/leads/{id}` | (A) |
 | PATCH | `/leads/{id}/status` | (A) |
 | PATCH | `/leads/{id}/notes` | (A) |
 | PUT | `/leads/{id}` | (A) |
 | DELETE | `/leads/{id}` | (A) |
 
-Status aceitos: `pending`, `analyzing`, `working`, `finished`, `cancelled`.
-
 ### Posts e comentários
 
 | Método | Rota | Auth |
 |--------|------|------|
-| GET | `/posts` | (P/A) anônimo: só `published`; autenticado: pode usar `?status=` (ex.: `draft`) |
-| GET | `/posts/{id}` | (P/A) mesmo critério de status; comentários incluídos no detalhe |
+| GET | `/posts` | (P/A) |
+| GET | `/posts/{id}` | (P/A) |
 | POST | `/posts` | (A) |
 | PUT | `/posts/{id}` | (A) |
 | DELETE | `/posts/{id}` | (A) |
-| POST | `/posts/{id}/likes/toggle` | (P) alterna like por **par IP + post** (`post_like_ips`), só post `published` com `allowLikes` |
-| POST | `/posts/{id}/comments` | (P) comentário anônimo exige `guestName`; usuário logado pode usar JWT (`sub` / name identifier) |
+| POST | `/posts/{id}/likes/toggle` | (P) requer migração `001_post_like_ips.sql` |
+| POST | `/posts/{id}/comments` | (P) |
 | PATCH | `/posts/{postId}/comments/{commentId}/author-like` | (A) |
 | DELETE | `/posts/{postId}/comments/{commentId}` | (A) |
+
+Leituras de `Posts` assumem `allowLikes` / `allowComments` / `externalLink` com valores padrão compatíveis com o front até que colunas existam no banco.
 
 ### Autor
 
 | Método | Rota | Auth |
 |--------|------|------|
-| GET | `/author` | (P) perfil id=1 + timeline |
-| PUT | `/author` | (A) atualiza perfil e substitui itens da timeline |
+| GET | `/author` | (P) |
+| PUT | `/author` | (A) |
 
-### Configuração e estatísticas
+### Config e estatísticas
 
 | Método | Rota | Auth |
 |--------|------|------|
-| GET | `/config/system` | (A) JSON em `system_settings` (`SystemConfig`) |
-| PUT | `/config/system` | (A) corpo `{ "value": { ... } }` |
-| GET | `/config/home` | (A) `HomeConfig` |
-| PUT | `/config/home` | (A) corpo `{ "value": { ... } }` |
-| GET | `/stats` | (A) lê `StatsConfig` |
+| GET/PUT | `/config/system` | (A) chave `SystemConfig` |
+| GET/PUT | `/config/home` | (A) chave `HomeConfig` |
+| GET | `/stats` | (A) chave `StatsConfig` (seed em `insert.sql`) |
 
-## Segurança e boas práticas implementadas
+`SystemSettings.ConfigValue` é tipo **JSON** no MySQL; o repositório usa `CAST` na leitura/escrita.
 
-- Consultas Dapper **parametrizadas** (mitigação a SQL injection).
-- Respostas em **DTOs**, sem expor entidades do banco diretamente.
-- **UTC** para `DateTime.UtcNow` em persistência; respostas em ISO 8601 quando serializadas como `DateTime`.
-- CORS liberado para desenvolvimento (`AllowAnyOrigin`); restrinja em produção conforme o domínio do front-end.
+## Segurança
+
+- SQL parametrizado; respostas em DTOs; UTC nos serviços onde aplicável.
+- CORS aberto no código de desenvolvimento; restrinja em produção.
 
 ## Testes manuais
 
-Use o arquivo **`src/WebBookRP_API/WebBookRP_API.http`**: após o login, copie o `token` para a variável `@token` e ajuste GUIDs/IDs de exemplo (`@bookId`, `@serviceId`, etc.) conforme os dados do seu banco.
+`src/WebBookRP_API/WebBookRP_API.http` — após login, copie o `token` para `@token`.
 
-## Pacotes NuGet principais (API)
+## Pacotes principais
 
-- `Dapper`
-- `MySqlConnector`
-- `Microsoft.AspNetCore.Authentication.JwtBearer`
-- `Microsoft.AspNetCore.OpenApi`
-
----
-
-Documentação alinhada ao estado atual do código em `src/WebBookRP_API`. Para evoluir o sistema (usuários no banco, refresh token, políticas de CORS, etc.), estenda serviços e repositórios mantendo o mesmo padrão de camadas e DTOs.
+- `BCrypt.Net-Next`, `Dapper`, `MySqlConnector`, `Microsoft.AspNetCore.Authentication.JwtBearer`, `Microsoft.AspNetCore.OpenApi`

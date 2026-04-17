@@ -13,7 +13,11 @@ public class SystemSettingsRepository(IDbConnection connection) : ISystemSetting
     {
         await EnsureOpenAsync();
         return await _connection.QueryFirstOrDefaultAsync<string>(
-            "SELECT ValueJson FROM system_settings WHERE `Key` = @Key",
+            """
+            SELECT CAST(ConfigValue AS CHAR)
+            FROM SystemSettings
+            WHERE ConfigKey = @Key
+            """,
             new { Key = key });
     }
 
@@ -22,9 +26,9 @@ public class SystemSettingsRepository(IDbConnection connection) : ISystemSetting
         await EnsureOpenAsync();
         await _connection.ExecuteAsync(
             """
-            INSERT INTO system_settings (`Key`, ValueJson)
-            VALUES (@Key, @ValueJson)
-            ON DUPLICATE KEY UPDATE ValueJson = VALUES(ValueJson)
+            INSERT INTO SystemSettings (ConfigKey, ConfigValue)
+            VALUES (@Key, CAST(@ValueJson AS JSON))
+            ON DUPLICATE KEY UPDATE ConfigValue = CAST(@ValueJson AS JSON)
             """,
             new { Key = key, ValueJson = valueJson });
     }

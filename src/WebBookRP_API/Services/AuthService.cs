@@ -10,32 +10,33 @@ using WebBookRP_API.Models;
 
 namespace WebBookRP_API.Services;
 
-public class AuthService(IOptions<JwtSettings> jwtOptions, ISecurityLogRepository securityLogRepository) : IAuthService
+public class AuthService(
+    IOptions<JwtSettings> jwtOptions,
+    IUserRepository userRepository,
+    ISecurityLogRepository securityLogRepository) : IAuthService
 {
-    private const string DemoUsername = "admin";
-    private const string DemoPassword = "admin";
-
     private readonly JwtSettings _jwt = jwtOptions.Value;
+    private readonly IUserRepository _userRepository = userRepository;
     private readonly ISecurityLogRepository _securityLogRepository = securityLogRepository;
 
     public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request, string? ipAddress, string? userAgent)
     {
-        var success = string.Equals(request.Username, DemoUsername, StringComparison.Ordinal)
-                      && string.Equals(request.Password, DemoPassword, StringComparison.Ordinal);
-
-        await _securityLogRepository.InsertAsync(new SecurityLog
+        var login = request.ResolveLoginIdentifier();
+        if (string.IsNullOrWhiteSpace(login))
         {
-            EmailAttempt = request.Username,
-            Success = success,
-            IpAddress = ipAddress,
-            UserAgent = userAgent,
-            CreatedAtUtc = DateTime.UtcNow
-        });
+            await LogAttemptAsync(string.Empty, false, ipAddress, userAgent);
+            return null;
+        }
 
-        if (!success)
+        var user = await _userRepository.GetByEmailAsync(login);
+        var success = user is not null && VerifyPassword(request.Password, user.PasswordHash);
+
+        await LogAttemptAsync(login, success, ipAddress, userAgent);
+
+        if (!success || user is null)
             return null;
 
-        var token = CreateToken(request.Username);
+        var token = CreateToken(user);
         return new LoginResponseDto
         {
             Token = token,
@@ -44,33 +45,65 @@ public class AuthService(IOptions<JwtSettings> jwtOptions, ISecurityLogRepositor
         };
     }
 
-    public Task<SessionResponseDto> GetSessionAsync(ClaimsPrincipal user)
+    public Task<SessionResponseDto> GetSessionAsync(ClaimsPrincipal principal)
     {
-        if (user.Identity?.IsAuthenticated != true)
+        if (principal.Identity?.IsAuthenticated != true)
             return Task.FromResult(new SessionResponseDto { Authenticated = false });
 
-        var name = user.Identity.Name;
-        var id = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        var id = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        var name = principal.FindFirstValue(ClaimTypes.Name);
+        var email = principal.FindFirstValue(ClaimTypes.Email);
+        var role = principal.FindFirstValue(ClaimTypes.Role);
 
         return Task.FromResult(new SessionResponseDto
         {
             Authenticated = true,
-            Username = name,
-            UserId = id
+            UserId = id,
+            Name = name,
+            Email = email,
+            Role = role,
+            Username = email ?? name
         });
     }
 
-    private string CreateToken(string username)
+    private async Task LogAttemptAsync(string emailAttempt, bool success, string? ipAddress, string? userAgent)
+    {
+        await _securityLogRepository.InsertAsync(new SecurityLog
+        {
+            EmailAttempt = emailAttempt,
+            Success = success,
+            IpAddress = ipAddress,
+            UserAgent = userAgent,
+            CreatedAtUtc = DateTime.UtcNow
+        });
+    }
+
+    private static bool VerifyPassword(string plain, string storedHash)
+    {
+        if (string.IsNullOrWhiteSpace(plain) || string.IsNullOrWhiteSpace(storedHash))
+            return false;
+
+        storedHash = storedHash.Trim();
+        if (storedHash.StartsWith("$2", StringComparison.Ordinal))
+            return BCrypt.Net.BCrypt.Verify(plain, storedHash);
+
+        // Fallback inseguro apenas para migração legada (evite em produção)
+        return string.Equals(plain, storedHash, StringComparison.Ordinal);
+    }
+
+    private string CreateToken(User user)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.SigningKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub, "1"),
-            new(JwtRegisteredClaimNames.UniqueName, username),
-            new(ClaimTypes.Name, username),
-            new(ClaimTypes.Role, "Admin")
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.UniqueName, user.Email),
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Name, user.Name),
+            new(ClaimTypes.Email, user.Email),
+            new(ClaimTypes.Role, string.IsNullOrWhiteSpace(user.Role) ? "Admin" : user.Role)
         };
 
         var token = new JwtSecurityToken(

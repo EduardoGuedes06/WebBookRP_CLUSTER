@@ -16,7 +16,7 @@ public class AuthorRepository(IDbConnection connection) : IAuthorRepository
         return await _connection.QueryFirstOrDefaultAsync<AuthorProfile>(
             """
             SELECT Id, Name, Role, AvatarUrl, SecondaryImageUrl, Bio
-            FROM author_profiles
+            FROM AuthorProfile
             WHERE Id = @Id
             """,
             new { Id = id });
@@ -27,7 +27,7 @@ public class AuthorRepository(IDbConnection connection) : IAuthorRepository
         await EnsureOpenAsync();
         return await _connection.ExecuteAsync(
             """
-            UPDATE author_profiles SET
+            UPDATE AuthorProfile SET
                 Name = @Name,
                 Role = @Role,
                 AvatarUrl = @AvatarUrl,
@@ -43,10 +43,10 @@ public class AuthorRepository(IDbConnection connection) : IAuthorRepository
         await EnsureOpenAsync();
         var rows = await _connection.QueryAsync<AuthorTimelineItem>(
             """
-            SELECT Id, AuthorId, Year, Title, Description, SortOrder
-            FROM author_timeline
+            SELECT Id, AuthorId, Year, Title, Description, DisplayOrder AS SortOrder
+            FROM AuthorTimeline
             WHERE AuthorId = @AuthorId
-            ORDER BY SortOrder ASC, Id ASC
+            ORDER BY DisplayOrder ASC, Id ASC
             """,
             new { AuthorId = authorId });
         return rows.ToList();
@@ -58,30 +58,38 @@ public class AuthorRepository(IDbConnection connection) : IAuthorRepository
         var db = (DbConnection)_connection;
         await using var tx = await db.BeginTransactionAsync();
 
-        await _connection.ExecuteAsync(
-            "DELETE FROM author_timeline WHERE AuthorId = @AuthorId",
-            new { AuthorId = authorId },
-            tx);
-
-        foreach (var item in items)
+        try
         {
             await _connection.ExecuteAsync(
-                """
-                INSERT INTO author_timeline (AuthorId, Year, Title, Description, SortOrder)
-                VALUES (@AuthorId, @Year, @Title, @Description, @SortOrder)
-                """,
-                new
-                {
-                    AuthorId = authorId,
-                    item.Year,
-                    item.Title,
-                    item.Description,
-                    item.SortOrder
-                },
+                "DELETE FROM AuthorTimeline WHERE AuthorId = @AuthorId",
+                new { AuthorId = authorId },
                 tx);
-        }
 
-        await tx.CommitAsync();
+            foreach (var item in items)
+            {
+                await _connection.ExecuteAsync(
+                    """
+                    INSERT INTO AuthorTimeline (AuthorId, Year, Title, Description, DisplayOrder)
+                    VALUES (@AuthorId, @Year, @Title, @Description, @SortOrder)
+                    """,
+                    new
+                    {
+                        AuthorId = authorId,
+                        item.Year,
+                        item.Title,
+                        item.Description,
+                        item.SortOrder
+                    },
+                    tx);
+            }
+
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
     }
 
     private async Task EnsureOpenAsync()

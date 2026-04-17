@@ -15,10 +15,10 @@ public class CommentRepository(IDbConnection connection) : ICommentRepository
         await EnsureOpenAsync();
         var rows = await _connection.QueryAsync<Comment>(
             """
-            SELECT Id, PostId, `Text` AS Text, GuestName, UserId, AuthorLike, CreatedAtUtc
-            FROM comments
+            SELECT Id, PostId, `Text`, GuestName, UserId, AuthorLike, CreatedAt AS CreatedAtUtc
+            FROM Comments
             WHERE PostId = @PostId
-            ORDER BY CreatedAtUtc ASC
+            ORDER BY CreatedAt ASC
             """,
             new { PostId = postId });
         return rows.ToList();
@@ -29,8 +29,8 @@ public class CommentRepository(IDbConnection connection) : ICommentRepository
         await EnsureOpenAsync();
         return await _connection.QueryFirstOrDefaultAsync<Comment>(
             """
-            SELECT Id, PostId, `Text` AS Text, GuestName, UserId, AuthorLike, CreatedAtUtc
-            FROM comments
+            SELECT Id, PostId, `Text`, GuestName, UserId, AuthorLike, CreatedAt AS CreatedAtUtc
+            FROM Comments
             WHERE Id = @Id
             """,
             new { Id = commentId });
@@ -40,10 +40,11 @@ public class CommentRepository(IDbConnection connection) : ICommentRepository
     {
         await EnsureOpenAsync();
         const string sql = """
-            INSERT INTO comments (PostId, `Text`, GuestName, UserId, AuthorLike, CreatedAtUtc)
-            VALUES (@PostId, @Text, @GuestName, @UserId, @AuthorLike, @CreatedAtUtc);
+            INSERT INTO Comments (PostId, `Text`, GuestName, UserId, AuthorLike)
+            VALUES (@PostId, @Text, @GuestName, @UserId, @AuthorLike);
             SELECT LAST_INSERT_ID();
             """;
+        // Nota: O CreatedAt é gerado automaticamente pelo banco (DEFAULT CURRENT_TIMESTAMP)
         return await _connection.QuerySingleAsync<int>(sql, comment);
     }
 
@@ -51,7 +52,7 @@ public class CommentRepository(IDbConnection connection) : ICommentRepository
     {
         await EnsureOpenAsync();
         return await _connection.ExecuteAsync(
-            "DELETE FROM comments WHERE Id = @Id AND PostId = @PostId",
+            "DELETE FROM Comments WHERE Id = @Id AND PostId = @PostId",
             new { Id = commentId, PostId = postId });
     }
 
@@ -60,7 +61,7 @@ public class CommentRepository(IDbConnection connection) : ICommentRepository
         await EnsureOpenAsync();
         return await _connection.ExecuteAsync(
             """
-            UPDATE comments
+            UPDATE Comments
             SET AuthorLike = @AuthorLike
             WHERE Id = @Id AND PostId = @PostId
             """,

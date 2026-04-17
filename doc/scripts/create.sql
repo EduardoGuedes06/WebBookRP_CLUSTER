@@ -119,3 +119,11 @@ CREATE TABLE `SecurityLogs` (
     `UserAgent` VARCHAR(500),
     `CreatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `post_like_ips` (
+  `PostId` INT NOT NULL,
+  `IpAddress` VARCHAR(45) NOT NULL,
+  `CreatedAtUtc` DATETIME(6) NOT NULL,
+  PRIMARY KEY (`PostId`, `IpAddress`),
+  CONSTRAINT `fk_post_like_ips_post` FOREIGN KEY (`PostId`) REFERENCES `Posts` (`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

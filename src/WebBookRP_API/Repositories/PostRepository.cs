@@ -16,11 +16,16 @@ public class PostRepository(IDbConnection connection) : IPostRepository
         var rows = await _connection.QueryAsync<Post>(
             """
             SELECT Id, Title, Category, CoverType, CoverColor, CoverText, CoverTextColor,
-                   ImageUrl, Content, ExternalLink, AllowLikes, AllowComments, Status, LikesCount,
-                   CreatedAtUtc, UpdatedAtUtc
-            FROM posts
+                   ImageUrl, Content,
+                   CAST(NULL AS CHAR) AS ExternalLink,
+                   1 AS AllowLikes,
+                   1 AS AllowComments,
+                   Status, LikesCount,
+                   CreatedAt AS CreatedAtUtc,
+                   CreatedAt AS UpdatedAtUtc
+            FROM Posts
             WHERE (@Status IS NULL OR Status = @Status)
-            ORDER BY CreatedAtUtc DESC
+            ORDER BY CreatedAt DESC
             """,
             new { Status = status });
         return rows.ToList();
@@ -32,9 +37,14 @@ public class PostRepository(IDbConnection connection) : IPostRepository
         return await _connection.QueryFirstOrDefaultAsync<Post>(
             """
             SELECT Id, Title, Category, CoverType, CoverColor, CoverText, CoverTextColor,
-                   ImageUrl, Content, ExternalLink, AllowLikes, AllowComments, Status, LikesCount,
-                   CreatedAtUtc, UpdatedAtUtc
-            FROM posts
+                   ImageUrl, Content,
+                   CAST(NULL AS CHAR) AS ExternalLink,
+                   1 AS AllowLikes,
+                   1 AS AllowComments,
+                   Status, LikesCount,
+                   CreatedAt AS CreatedAtUtc,
+                   CreatedAt AS UpdatedAtUtc
+            FROM Posts
             WHERE Id = @Id
             """,
             new { Id = id });
@@ -44,14 +54,12 @@ public class PostRepository(IDbConnection connection) : IPostRepository
     {
         await EnsureOpenAsync();
         const string sql = """
-            INSERT INTO posts (
+            INSERT INTO Posts (
                 Title, Category, CoverType, CoverColor, CoverText, CoverTextColor,
-                ImageUrl, Content, ExternalLink, AllowLikes, AllowComments, Status, LikesCount,
-                CreatedAtUtc, UpdatedAtUtc
+                ImageUrl, Content, Status, LikesCount
             ) VALUES (
                 @Title, @Category, @CoverType, @CoverColor, @CoverText, @CoverTextColor,
-                @ImageUrl, @Content, @ExternalLink, @AllowLikes, @AllowComments, @Status, @LikesCount,
-                @CreatedAtUtc, @UpdatedAtUtc
+                @ImageUrl, @Content, @Status, @LikesCount
             );
             SELECT LAST_INSERT_ID();
             """;
@@ -63,7 +71,7 @@ public class PostRepository(IDbConnection connection) : IPostRepository
         await EnsureOpenAsync();
         return await _connection.ExecuteAsync(
             """
-            UPDATE posts SET
+            UPDATE Posts SET
                 Title = @Title,
                 Category = @Category,
                 CoverType = @CoverType,
@@ -72,12 +80,8 @@ public class PostRepository(IDbConnection connection) : IPostRepository
                 CoverTextColor = @CoverTextColor,
                 ImageUrl = @ImageUrl,
                 Content = @Content,
-                ExternalLink = @ExternalLink,
-                AllowLikes = @AllowLikes,
-                AllowComments = @AllowComments,
                 Status = @Status,
-                LikesCount = @LikesCount,
-                UpdatedAtUtc = @UpdatedAtUtc
+                LikesCount = @LikesCount
             WHERE Id = @Id
             """,
             post);
@@ -86,7 +90,7 @@ public class PostRepository(IDbConnection connection) : IPostRepository
     public async Task<int> DeleteAsync(int id)
     {
         await EnsureOpenAsync();
-        return await _connection.ExecuteAsync("DELETE FROM posts WHERE Id = @Id", new { Id = id });
+        return await _connection.ExecuteAsync("DELETE FROM Posts WHERE Id = @Id", new { Id = id });
     }
 
     public async Task<int> ToggleLikeByIpAsync(int postId, string ipAddress)
@@ -95,6 +99,8 @@ public class PostRepository(IDbConnection connection) : IPostRepository
         var db = (DbConnection)_connection;
         await using var tx = await db.BeginTransactionAsync();
 
+        // Nota: A tabela post_like_ips não existe no seu create.sql manual.
+        // Se desejar manter essa funcionalidade, adicione-a ao banco.
         var deleted = await _connection.ExecuteAsync(
             "DELETE FROM post_like_ips WHERE PostId = @PostId AND IpAddress = @IpAddress",
             new { PostId = postId, IpAddress = ipAddress },
@@ -106,11 +112,11 @@ public class PostRepository(IDbConnection connection) : IPostRepository
         {
             await _connection.ExecuteAsync(
                 """
-                UPDATE posts
-                SET LikesCount = GREATEST(LikesCount - 1, 0), UpdatedAtUtc = @Now
+                UPDATE Posts
+                SET LikesCount = GREATEST(LikesCount - 1, 0)
                 WHERE Id = @PostId
                 """,
-                new { PostId = postId, Now = now },
+                new { PostId = postId },
                 tx);
         }
         else
@@ -125,16 +131,16 @@ public class PostRepository(IDbConnection connection) : IPostRepository
 
             await _connection.ExecuteAsync(
                 """
-                UPDATE posts
-                SET LikesCount = LikesCount + 1, UpdatedAtUtc = @Now
+                UPDATE Posts
+                SET LikesCount = LikesCount + 1
                 WHERE Id = @PostId
                 """,
-                new { PostId = postId, Now = now },
+                new { PostId = postId },
                 tx);
         }
 
         var likes = await _connection.QuerySingleAsync<int>(
-            "SELECT LikesCount FROM posts WHERE Id = @PostId",
+            "SELECT LikesCount FROM Posts WHERE Id = @PostId",
             new { PostId = postId },
             tx);
 

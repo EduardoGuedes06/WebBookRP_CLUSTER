@@ -1,0 +1,733 @@
+{
+  "info": {
+    "name": "WebBookRP API",
+    "description": "Collection gerada para testes em **localhost** (pasta `doc/postman/`).\n\n1. Importe também o arquivo **WebBookRP_API.local.postman_environment.json**.\n2. Selecione o environment **WebBookRP — Localhost**.\n3. Execute **Auth → Login**; o script salva `token` no environment e na collection.\n4. Rode as demais pastas (Bearer usa `{{token}}`).\n\nIDs padrão: `doc/insert.sql`. **POST /posts/{id}/likes/toggle** exige migração `doc/migrations/001_post_like_ips.sql` se a tabela ainda não existir.\n\nRegenerar: `node doc/postman/build-collection.mjs`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "webbookrp-api"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5028"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "loginEmail",
+      "value": "admin@gmail.com"
+    },
+    {
+      "key": "loginPassword",
+      "value": "Admin@123"
+    },
+    {
+      "key": "bookId",
+      "value": "b0000000-0000-0000-0000-000000000001"
+    },
+    {
+      "key": "serviceId",
+      "value": "s0000000-0000-0000-0000-000000000001"
+    },
+    {
+      "key": "postId",
+      "value": "1"
+    },
+    {
+      "key": "commentId",
+      "value": "1"
+    },
+    {
+      "key": "leadId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (salva token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{loginEmail}}\",\n  \"password\": \"{{loginPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Tem token', () => pm.expect(j.token).to.be.a('string').and.not.empty);",
+                  "pm.collectionVariables.set('token', j.token);",
+                  "pm.environment.set('token', j.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/logout"
+          }
+        },
+        {
+          "name": "Session (sem token)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/auth/session"
+          }
+        },
+        {
+          "name": "Session (com Bearer)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/session"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Books",
+      "item": [
+        {
+          "name": "GET /books (admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/books"
+          }
+        },
+        {
+          "name": "GET /books/catalog",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/books/catalog"
+          }
+        },
+        {
+          "name": "GET /books/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/books/{{bookId}}"
+          }
+        },
+        {
+          "name": "POST /books",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/books",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Test Book\",\n  \"genre\": \"Teste\",\n  \"price\": 9.99,\n  \"promoPrice\": null,\n  \"active\": true,\n  \"isPromotion\": false,\n  \"cover\": \"\",\n  \"synopsis\": \"Syn\",\n  \"coverSynopsis\": null,\n  \"linkAmazon\": null,\n  \"linkML\": null,\n  \"linkShopee\": null,\n  \"linkGeneric\": null,\n  \"fullSynopsis\": \"<p>HTML</p>\",\n  \"pages\": 100,\n  \"rating\": 4,\n  \"reviews\": 0\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /books/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/books/{{bookId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Update\",\n  \"genre\": \"Teste\",\n  \"price\": 19.99,\n  \"promoPrice\": null,\n  \"active\": true,\n  \"isPromotion\": false,\n  \"cover\": \"\",\n  \"synopsis\": null,\n  \"coverSynopsis\": null,\n  \"linkAmazon\": null,\n  \"linkML\": null,\n  \"linkShopee\": null,\n  \"linkGeneric\": null,\n  \"fullSynopsis\": null,\n  \"pages\": 100,\n  \"rating\": 4.2,\n  \"reviews\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /books/{id} (cuidado)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/books/{{bookId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Services",
+      "item": [
+        {
+          "name": "GET /services (público)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/services"
+          }
+        },
+        {
+          "name": "GET /services/all",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/services/all"
+          }
+        },
+        {
+          "name": "GET /services/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/services/{{serviceId}}"
+          }
+        },
+        {
+          "name": "POST /services",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/services",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Serviço Postman\",\n  \"price\": 99,\n  \"unit\": \"hora\",\n  \"active\": true,\n  \"isPromotion\": false,\n  \"promoPrice\": null,\n  \"icon\": \"\",\n  \"theme\": \"blue\",\n  \"description\": \"Criado via Postman\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /services/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/services/{{serviceId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Design de Capa\",\n  \"price\": 850,\n  \"promoPrice\": null,\n  \"unit\": null,\n  \"active\": true,\n  \"isPromotion\": false,\n  \"icon\": \"ph-paint-brush-broad\",\n  \"theme\": \"purple\",\n  \"description\": \"Atualizado Postman\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /services/{id} (cuidado)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/services/{{serviceId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Leads",
+      "item": [
+        {
+          "name": "POST /leads (público)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/leads",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"name\": \"Lead Postman\",\n  \"email\": \"lead-postman@example.com\",\n  \"phone\": \"11999990000\",\n  \"description\": \"Teste collection\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /leads",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/leads?page=1&pageSize=20&status=pending&search="
+          }
+        },
+        {
+          "name": "GET /leads/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/leads/{{leadId}}"
+          }
+        },
+        {
+          "name": "PATCH /leads/{id}/status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/leads/{{leadId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"analyzing\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH /leads/{id}/notes",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/leads/{{leadId}}/notes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Nota Postman\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /leads/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/leads/{{leadId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"name\": \"Lead Atualizado\",\n  \"email\": \"lead-updated@example.com\",\n  \"phone\": null,\n  \"description\": \"PUT\",\n  \"value\": 100,\n  \"status\": \"working\",\n  \"notes\": \"OK\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /leads/{id} (cuidado)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/leads/{{leadId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Posts",
+      "item": [
+        {
+          "name": "GET /posts?status=published",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/posts?status=published"
+          }
+        },
+        {
+          "name": "GET /posts (admin — requer token)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/posts"
+          }
+        },
+        {
+          "name": "GET /posts/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/posts/{{postId}}"
+          }
+        },
+        {
+          "name": "POST /posts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/posts",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Post Postman\",\n  \"category\": \"Teste\",\n  \"coverType\": \"color\",\n  \"coverColor\": \"#111827\",\n  \"coverText\": \"T\",\n  \"coverTextColor\": \"#fff\",\n  \"imageUrl\": null,\n  \"content\": \"Conteúdo\",\n  \"externalLink\": null,\n  \"allowLikes\": true,\n  \"allowComments\": true,\n  \"status\": \"draft\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /posts/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/posts/{{postId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Post Atualizado Postman\",\n  \"category\": \"Escrita\",\n  \"coverType\": \"color\",\n  \"coverColor\": \"1e293b\",\n  \"coverText\": \"Bloqueio Criativo\",\n  \"coverTextColor\": \"#ffffff\",\n  \"imageUrl\": null,\n  \"content\": \"Conteúdo atualizado\",\n  \"externalLink\": null,\n  \"allowLikes\": true,\n  \"allowComments\": true,\n  \"status\": \"published\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /posts/{id}/likes/toggle",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/posts/{{postId}}/likes/toggle"
+          }
+        },
+        {
+          "name": "POST /posts/{id}/comments",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/posts/{{postId}}/comments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Comentário Postman\",\n  \"guestName\": \"Visitante PM\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH comments author-like",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/posts/{{postId}}/comments/{{commentId}}/author-like",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"authorLike\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE comment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/posts/{{postId}}/comments/{{commentId}}"
+          }
+        },
+        {
+          "name": "DELETE /posts/{id} (cuidado)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/posts/{{postId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Author",
+      "item": [
+        {
+          "name": "GET /author",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/author"
+          }
+        },
+        {
+          "name": "PUT /author",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/author",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ronaldo Pereira\",\n  \"role\": \"Escritor\",\n  \"avatarUrl\": null,\n  \"secondaryImageUrl\": null,\n  \"bio\": \"Bio via Postman\",\n  \"timeline\": [\n    {\n      \"id\": null,\n      \"year\": \"2015\",\n      \"title\": \"O Início\",\n      \"description\": \"...\",\n      \"sortOrder\": 0\n    }\n  ]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Config & Stats",
+      "item": [
+        {
+          "name": "GET /config/system",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/config/system"
+          }
+        },
+        {
+          "name": "PUT /config/system",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/config/system",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": {\n    \"maxActiveProjects\": 4,\n    \"currency\": \"BRL\",\n    \"adminName\": \"Ronaldo Pereira\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /config/home",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/config/home"
+          }
+        },
+        {
+          "name": "PUT /config/home",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/config/home",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": {\n    \"heroBookId\": \"{{bookId}}\",\n    \"showLaunchBadge\": true\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/stats"
+          }
+        }
+      ]
+    }
+  ]
+}
