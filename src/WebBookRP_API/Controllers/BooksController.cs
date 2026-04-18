@@ -33,6 +33,14 @@ public class BooksController(IBookService bookService) : ControllerBase
         return book is null ? NotFound() : Ok(book);
     }
 
+    [HttpGet("admin/{id:guid}")]
+    [Authorize]
+    public async Task<ActionResult<BookResponseDto>> GetByIdAdmin(Guid id)
+    {
+        var book = await _bookService.GetByIdForAdminAsync(id);
+        return book is null ? NotFound() : Ok(book);
+    }
+
     [HttpPost]
     [Authorize]
     public async Task<ActionResult<BookResponseDto>> Create([FromBody] BookCreateRequestDto request)

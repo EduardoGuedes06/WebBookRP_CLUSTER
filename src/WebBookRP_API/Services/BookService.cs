@@ -29,6 +29,12 @@ public class BookService(IBookRepository repository) : IBookService
         return Map(book);
     }
 
+    public async Task<BookResponseDto?> GetByIdForAdminAsync(Guid id)
+    {
+        var book = await _repository.GetByIdAsync(id);
+        return book is null ? null : Map(book);
+    }
+
     public async Task<BookResponseDto> CreateAsync(BookCreateRequestDto request)
     {
         var now = DateTime.UtcNow;
