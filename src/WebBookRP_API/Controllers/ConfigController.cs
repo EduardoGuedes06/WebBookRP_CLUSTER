@@ -7,7 +7,6 @@ namespace WebBookRP_API.Controllers;
 
 [ApiController]
 [Route("config")]
-[Authorize]
 public class ConfigController(IConfigService configService) : ControllerBase
 {
     private readonly IConfigService _configService = configService;
@@ -19,6 +18,7 @@ public class ConfigController(IConfigService configService) : ControllerBase
     }
 
     [HttpPut("system")]
+    [Authorize]
     public async Task<ActionResult<SettingResponseDto>> PutSystem([FromBody] SettingUpdateRequestDto request)
     {
         return Ok(await _configService.UpdateSystemAsync(request.Value));
@@ -31,6 +31,7 @@ public class ConfigController(IConfigService configService) : ControllerBase
     }
 
     [HttpPut("home")]
+    [Authorize]
     public async Task<ActionResult<SettingResponseDto>> PutHome([FromBody] SettingUpdateRequestDto request)
     {
         return Ok(await _configService.UpdateHomeAsync(request.Value));
