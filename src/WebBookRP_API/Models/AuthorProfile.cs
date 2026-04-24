@@ -8,4 +8,5 @@ public class AuthorProfile
     public string? AvatarUrl { get; set; }
     public string? SecondaryImageUrl { get; set; }
     public string? Bio { get; set; }
+    public string? SocialLinks { get; set; }
 }

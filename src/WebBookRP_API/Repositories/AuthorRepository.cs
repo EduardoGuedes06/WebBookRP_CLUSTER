@@ -15,7 +15,7 @@ public class AuthorRepository(IDbConnection connection) : IAuthorRepository
         await EnsureOpenAsync();
         return await _connection.QueryFirstOrDefaultAsync<AuthorProfile>(
             """
-            SELECT Id, Name, Role, AvatarUrl, SecondaryImageUrl, Bio
+            SELECT Id, Name, Role, AvatarUrl, SecondaryImageUrl, Bio, SocialLinks
             FROM AuthorProfile
             WHERE Id = @Id
             """,
@@ -32,7 +32,8 @@ public class AuthorRepository(IDbConnection connection) : IAuthorRepository
                 Role = @Role,
                 AvatarUrl = @AvatarUrl,
                 SecondaryImageUrl = @SecondaryImageUrl,
-                Bio = @Bio
+                Bio = @Bio,
+                SocialLinks = @SocialLinks
             WHERE Id = @Id
             """,
             profile);

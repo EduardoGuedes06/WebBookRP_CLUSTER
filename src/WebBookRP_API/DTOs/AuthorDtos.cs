@@ -19,6 +19,7 @@ public class AuthorResponseDto
     public string? AvatarUrl { get; set; }
     public string? SecondaryImageUrl { get; set; }
     public string? Bio { get; set; }
+    public string? SocialLinks { get; set; }
     public IReadOnlyList<AuthorTimelineItemResponseDto> Timeline { get; set; } = Array.Empty<AuthorTimelineItemResponseDto>();
 }
 
@@ -32,6 +33,7 @@ public class AuthorUpdateRequestDto
     public string? AvatarUrl { get; set; }
     public string? SecondaryImageUrl { get; set; }
     public string? Bio { get; set; }
+    public string? SocialLinks { get; set; }
 
     public List<AuthorTimelineItemUpdateDto> Timeline { get; set; } = new();
 }

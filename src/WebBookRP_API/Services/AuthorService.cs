@@ -28,6 +28,7 @@ public class AuthorService(IAuthorRepository repository) : IAuthorService
         profile.AvatarUrl = request.AvatarUrl;
         profile.SecondaryImageUrl = request.SecondaryImageUrl;
         profile.Bio = request.Bio;
+        profile.SocialLinks = request.SocialLinks;
 
         await _repository.UpdateProfileAsync(profile);
 
@@ -57,6 +58,7 @@ public class AuthorService(IAuthorRepository repository) : IAuthorService
         AvatarUrl = p.AvatarUrl,
         SecondaryImageUrl = p.SecondaryImageUrl,
         Bio = p.Bio,
+        SocialLinks = p.SocialLinks,
         Timeline = timeline
             .Select(t => new AuthorTimelineItemResponseDto
             {
