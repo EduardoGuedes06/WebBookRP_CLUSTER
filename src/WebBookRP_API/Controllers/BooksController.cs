@@ -29,7 +29,10 @@ public class BooksController(IBookService bookService) : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<BookResponseDto>> GetById(Guid id)
     {
-        var book = await _bookService.GetPublicByIdAsync(id);
+        var ip = Request.Headers["X-Forwarded-For"].FirstOrDefault()?? HttpContext.Connection.RemoteIpAddress?.ToString();
+        bool skipMetrics = User.Identity?.IsAuthenticated ?? false;
+
+        var book = await _bookService.GetPublicByIdAsync(id, ip, skipMetrics);
         return book is null ? NotFound() : Ok(book);
     }
 

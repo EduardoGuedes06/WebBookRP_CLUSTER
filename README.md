@@ -190,6 +190,16 @@ Leituras de `Posts` assumem `allowLikes` / `allowComments` / `externalLink` com 
 
 `SystemSettings.ConfigValue` é tipo **JSON** no MySQL; o repositório usa `CAST` na leitura/escrita.
 
+### Métricas
+
+| Método | Rota | Auth |
+|--------|------|------|
+| POST | `/metrics/clicks` | (P) |
+| GET | `/metrics/dashboard-summary` | (A) |
+| GET | `/metrics/funnel` | (A) |
+| GET | `/metrics/popular-services` | (A) |
+| GET | `/metrics/traffic-sources` | (A) |
+
 ## Segurança
 
 - SQL parametrizado; respostas em DTOs; UTC nos serviços onde aplicável.

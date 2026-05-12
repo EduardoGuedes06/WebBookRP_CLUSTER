@@ -24,28 +24,32 @@ public class MetricsController(IMetricsService metricsService) : ControllerBase
     }
 
     [HttpGet("dashboard-summary")]
-    [Authorize]
+    //[Authorize]
+    [AllowAnonymous]
     public async Task<ActionResult<DashboardSummaryDto>> GetDashboardSummary(CancellationToken cancellationToken)
     {
         return Ok(await _metricsService.GetDashboardSummaryAsync(cancellationToken));
     }
 
     [HttpGet("funnel")]
-    [Authorize]
+    //[Authorize]
+    [AllowAnonymous]
     public async Task<ActionResult<LeadFunnelDto>> GetFunnel(CancellationToken cancellationToken)
     {
         return Ok(await _metricsService.GetLeadFunnelAsync(cancellationToken));
     }
 
     [HttpGet("popular-services")]
-    [Authorize]
+    //[Authorize]
+    [AllowAnonymous]
     public async Task<ActionResult<IReadOnlyList<PopularServiceDto>>> GetPopularServices(CancellationToken cancellationToken)
     {
         return Ok(await _metricsService.GetPopularServicesAsync(cancellationToken));
     }
 
     [HttpGet("traffic-sources")]
-    [Authorize]
+    //[Authorize]
+    [AllowAnonymous]
     public async Task<ActionResult<IReadOnlyList<TrafficSourceDto>>> GetTrafficSources(CancellationToken cancellationToken)
     {
         return Ok(await _metricsService.GetTrafficSourcesAsync(cancellationToken));

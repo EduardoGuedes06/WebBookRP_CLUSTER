@@ -5,9 +5,10 @@ using WebBookRP_API.Models;
 
 namespace WebBookRP_API.Services;
 
-public class BookService(IBookRepository repository) : IBookService
+public class BookService(IBookRepository repository, IMetricsRepository metricsRepository) : IBookService
 {
     private readonly IBookRepository _repository = repository;
+    private readonly IMetricsRepository _metricsRepository = metricsRepository;
 
     public async Task<IReadOnlyList<BookResponseDto>> GetAllForAdminAsync()
     {
@@ -21,11 +22,24 @@ public class BookService(IBookRepository repository) : IBookService
         return items.Select(Map).ToList();
     }
 
-    public async Task<BookResponseDto?> GetPublicByIdAsync(Guid id)
+    public async Task<BookResponseDto?> GetPublicByIdAsync(Guid id, string? ip, bool skipMetrics)
     {
         var book = await _repository.GetByIdAsync(id);
         if (book is null || !book.Active)
             return null;
+
+        if (!skipMetrics)
+        {
+            try
+            {
+                await _metricsRepository.RegisterExternalClickAsync(id, "", ip);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Falha silenciosa na métrica: {ex.Message}");
+            }
+        }
+
         return Map(book);
     }
 
