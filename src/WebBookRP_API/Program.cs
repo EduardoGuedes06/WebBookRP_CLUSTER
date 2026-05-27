@@ -14,6 +14,8 @@ builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection(JwtSett
 var jwt = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
           ?? throw new InvalidOperationException("Seção Jwt não configurada.");
 
+builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 20 * 1024 * 1024);
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 

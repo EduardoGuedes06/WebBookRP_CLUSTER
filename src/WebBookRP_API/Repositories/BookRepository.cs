@@ -62,15 +62,14 @@ public class BookRepository(IDbConnection connection) : IBookRepository
             """
             SELECT Id, Title, Genre, Price, PromoPrice, Active, IsPromotion,
                    CoverUrl AS Cover,
-                   CAST(NULL AS CHAR) AS Synopsis,
                    CoverSynopsis, FullSynopsis,
-                   CAST(NULL AS CHAR) AS LinkAmazon,
-                   CAST(NULL AS CHAR) AS LinkML,
-                   CAST(NULL AS CHAR) AS LinkShopee,
-                   CAST(NULL AS CHAR) AS LinkGeneric,
+                   LinkAmazon,
+                   LinkML,
+                   LinkShopee,
+                   LinkGeneric,
                    Pages, Rating, ReviewsCount AS Reviews,
                    CreatedAt AS CreatedAtUtc,
-                   CreatedAt AS UpdatedAtUtc
+                   UpdatedAtUtc
             FROM Books
             WHERE Id = @Id
             """,
@@ -98,21 +97,26 @@ public class BookRepository(IDbConnection connection) : IBookRepository
         await EnsureOpenAsync();
         return await _connection.ExecuteAsync(
             """
-            UPDATE Books SET
-                Title = @Title,
-                Genre = @Genre,
-                Price = @Price,
-                PromoPrice = @PromoPrice,
-                Active = @Active,
-                IsPromotion = @IsPromotion,
-                CoverUrl = @Cover,
-                CoverSynopsis = @CoverSynopsis,
-                FullSynopsis = @FullSynopsis,
-                Pages = @Pages,
-                Rating = @Rating,
-                ReviewsCount = @Reviews
-            WHERE Id = @Id
-            """,
+        UPDATE Books SET
+            Title = @Title,
+            Genre = @Genre,
+            Price = @Price,
+            PromoPrice = @PromoPrice,
+            Active = @Active,
+            IsPromotion = @IsPromotion,
+            CoverUrl = @Cover, -- Certifique-se de que o objeto 'book' tem a propriedade 'Cover'
+            CoverSynopsis = @CoverSynopsis,
+            FullSynopsis = @FullSynopsis,
+            Pages = @Pages,
+            Rating = @Rating,
+            ReviewsCount = @Reviews, -- Certifique-se de que o objeto 'book' tem a propriedade 'Reviews'
+            LinkAmazon = @LinkAmazon,
+            LinkML = @LinkML,
+            LinkShopee = @LinkShopee,
+            LinkGeneric = @LinkGeneric,
+            UpdatedAtUtc = @UpdatedAtUtc
+        WHERE Id = @Id
+        """,
             book);
     }
 

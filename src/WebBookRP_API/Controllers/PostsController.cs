@@ -41,8 +41,15 @@ public class PostsController(IPostService postService) : ControllerBase
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
 
-        var created = await _postService.CreateAsync(request);
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        try
+        {
+            var created = await _postService.CreateAsync(request);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPut("{id:int}")]
@@ -52,8 +59,15 @@ public class PostsController(IPostService postService) : ControllerBase
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
 
-        var updated = await _postService.UpdateAsync(id, request);
-        return updated is null ? NotFound() : Ok(updated);
+        try
+        {
+            var updated = await _postService.UpdateAsync(id, request);
+            return updated is null ? NotFound() : Ok(updated);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpDelete("{id:int}")]

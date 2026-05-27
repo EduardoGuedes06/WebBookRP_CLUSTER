@@ -6,6 +6,8 @@ namespace WebBookRP_API.Services;
 
 public class PostService(IPostRepository postRepository, ICommentRepository commentRepository) : IPostService
 {
+    private const int MaxImageUrlChars = 4 * 1024 * 1024; // ~4 MB em texto (base64/data-uri)
+
     private readonly IPostRepository _postRepository = postRepository;
     private readonly ICommentRepository _commentRepository = commentRepository;
 
@@ -34,6 +36,8 @@ public class PostService(IPostRepository postRepository, ICommentRepository comm
 
     public async Task<PostDetailResponseDto> CreateAsync(PostCreateRequestDto request)
     {
+        ValidateImageUrl(request.ImageUrl);
+
         var now = DateTime.UtcNow;
         var post = new Post
         {
@@ -73,6 +77,7 @@ public class PostService(IPostRepository postRepository, ICommentRepository comm
         existing.CoverColor = request.CoverColor;
         existing.CoverText = request.CoverText;
         existing.CoverTextColor = request.CoverTextColor;
+        ValidateImageUrl(request.ImageUrl);
         existing.ImageUrl = request.ImageUrl;
         existing.Content = request.Content;
         existing.ExternalLink = request.ExternalLink;
@@ -140,6 +145,15 @@ public class PostService(IPostRepository postRepository, ICommentRepository comm
     {
         var affected = await _commentRepository.DeleteAsync(postId, commentId);
         return affected > 0;
+    }
+
+    private static void ValidateImageUrl(string? imageUrl)
+    {
+        if (string.IsNullOrEmpty(imageUrl))
+            return;
+
+        if (imageUrl.Length > MaxImageUrlChars)
+            throw new ArgumentException($"ImageUrl excede o limite de {MaxImageUrlChars / (1024 * 1024)} MB.");
     }
 
     private static PostListItemResponseDto MapListItem(Post p) => new()
