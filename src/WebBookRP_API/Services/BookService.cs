@@ -86,7 +86,7 @@ public class BookService(IBookRepository repository) : IBookService
         existing.LinkML = request.LinkML;
         existing.LinkShopee = request.LinkShopee;
         existing.LinkGeneric = request.LinkGeneric;
-        existing.FullSynopsis = request.FullSynopsis;
+        existing.FullSynopsis = request.Synopsis;
         existing.Pages = request.Pages;
         existing.Rating = request.Rating;
         existing.Reviews = request.Reviews;

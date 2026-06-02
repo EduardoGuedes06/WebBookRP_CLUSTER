@@ -24,13 +24,14 @@ public class SystemSettingsRepository(IDbConnection connection) : ISystemSetting
     public async Task UpsertAsync(string key, string valueJson)
     {
         await EnsureOpenAsync();
+
         await _connection.ExecuteAsync(
             """
-            INSERT INTO SystemSettings (ConfigKey, ConfigValue)
-            VALUES (@Key, CAST(@ValueJson AS JSON))
-            ON DUPLICATE KEY UPDATE ConfigValue = CAST(@ValueJson AS JSON)
-            """,
-            new { Key = key, ValueJson = valueJson });
+                INSERT INTO SystemSettings (ConfigKey, ConfigValue)
+                VALUES (@Key, @ValueJson)
+                ON DUPLICATE KEY UPDATE ConfigValue = VALUES(ConfigValue)
+                """,
+                    new { Key = key, ValueJson = valueJson });
     }
 
     private async Task EnsureOpenAsync()

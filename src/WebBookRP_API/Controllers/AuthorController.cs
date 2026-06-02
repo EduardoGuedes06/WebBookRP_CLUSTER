@@ -19,7 +19,7 @@ public class AuthorController(IAuthorService authorService) : ControllerBase
     }
 
     [HttpPut]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<AuthorResponseDto>> Update([FromBody] AuthorUpdateRequestDto request)
     {
         if (!ModelState.IsValid)

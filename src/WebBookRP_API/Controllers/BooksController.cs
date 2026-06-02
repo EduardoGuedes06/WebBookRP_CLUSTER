@@ -12,7 +12,7 @@ public class BooksController(IBookService bookService) : ControllerBase
     private readonly IBookService _bookService = bookService;
 
     [HttpGet]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<IReadOnlyList<BookResponseDto>>> GetAll()
     {
         return Ok(await _bookService.GetAllForAdminAsync());
@@ -34,7 +34,7 @@ public class BooksController(IBookService bookService) : ControllerBase
     }
 
     [HttpGet("admin/{id:guid}")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<BookResponseDto>> GetByIdAdmin(Guid id)
     {
         var book = await _bookService.GetByIdForAdminAsync(id);
@@ -42,7 +42,7 @@ public class BooksController(IBookService bookService) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<BookResponseDto>> Create([FromBody] BookCreateRequestDto request)
     {
         if (!ModelState.IsValid)
@@ -53,7 +53,7 @@ public class BooksController(IBookService bookService) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<BookResponseDto>> Update(Guid id, [FromBody] BookUpdateRequestDto request)
     {
         if (!ModelState.IsValid)
@@ -64,7 +64,7 @@ public class BooksController(IBookService bookService) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var ok = await _bookService.DeleteAsync(id);

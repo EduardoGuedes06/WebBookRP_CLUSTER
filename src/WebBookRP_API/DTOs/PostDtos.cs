@@ -20,6 +20,7 @@ public class PostListItemResponseDto
     public int LikesCount { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+
 }
 
 public class PostDetailResponseDto : PostListItemResponseDto
@@ -57,18 +58,18 @@ public class CommentResponseDto
     public int Id { get; set; }
     public int PostId { get; set; }
     public string Text { get; set; } = string.Empty;
-    public string? GuestName { get; set; }
-    public string? UserId { get; set; }
+    public string UserId { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
+    public string? UserAvatar { get; set; }
     public bool AuthorLike { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 
 public class CommentCreateRequestDto
 {
-    [Required]
+    [Required(ErrorMessage = "O texto do comentário é obrigatório.")]
+    [MaxLength(1000, ErrorMessage = "O comentário não pode exceder 1000 caracteres.")]
     public string Text { get; set; } = string.Empty;
-
-    public string? GuestName { get; set; }
 }
 
 public class AuthorLikePatchRequestDto

@@ -21,7 +21,7 @@ public class PostsController(IPostService postService) : ControllerBase
 
     [HttpGet]
     [AllowAnonymous]
-    public async Task<ActionResult<IReadOnlyList<PostListItemResponseDto>>> GetAll([FromQuery] string? status)
+    public async Task<ActionResult<IReadOnlyList<PostDetailResponseDto>>> GetAll([FromQuery] string? status)
     {
         return Ok(await _postService.ListAsync(status, IsAuthenticated()));
     }
@@ -35,7 +35,7 @@ public class PostsController(IPostService postService) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<PostDetailResponseDto>> Create([FromBody] PostCreateRequestDto request)
     {
         if (!ModelState.IsValid)
@@ -53,7 +53,7 @@ public class PostsController(IPostService postService) : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<PostDetailResponseDto>> Update(int id, [FromBody] PostUpdateRequestDto request)
     {
         if (!ModelState.IsValid)
@@ -71,7 +71,7 @@ public class PostsController(IPostService postService) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<IActionResult> Delete(int id)
     {
         var ok = await _postService.DeleteAsync(id);
@@ -91,7 +91,7 @@ public class PostsController(IPostService postService) : ControllerBase
     }
 
     [HttpPost("{id:int}/comments")]
-    [AllowAnonymous]
+    [Authorize(AuthenticationSchemes = "Google")]
     public async Task<ActionResult<CommentResponseDto>> AddComment(int id, [FromBody] CommentCreateRequestDto request)
     {
         if (!ModelState.IsValid)
@@ -99,8 +99,14 @@ public class PostsController(IPostService postService) : ControllerBase
 
         try
         {
-            var userId = IsAuthenticated() ? CurrentUserId() : null;
-            var created = await _postService.AddCommentAsync(id, request, userId);
+            var userId = CurrentUserId();
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "Usuário não autenticado." });
+
+            var userName = User.FindFirstValue("name") ?? User.FindFirstValue(ClaimTypes.Name) ?? "Usuário Google";
+            var userAvatar = User.FindFirstValue("picture") ?? User.FindFirstValue("image");
+
+            var created = await _postService.AddCommentAsync(id, request, userId, userName, userAvatar);
             return created is null ? NotFound() : Ok(created);
         }
         catch (ArgumentException ex)
@@ -110,7 +116,7 @@ public class PostsController(IPostService postService) : ControllerBase
     }
 
     [HttpPatch("{postId:int}/comments/{commentId:int}/author-like")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<IActionResult> PatchAuthorLike(
         int postId,
         int commentId,
@@ -124,10 +130,54 @@ public class PostsController(IPostService postService) : ControllerBase
     }
 
     [HttpDelete("{postId:int}/comments/{commentId:int}")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<IActionResult> DeleteComment(int postId, int commentId)
     {
         var ok = await _postService.DeleteCommentAsync(postId, commentId);
         return ok ? NoContent() : NotFound();
+    }
+
+    //Users
+
+    [HttpDelete("{postId:int}/comments/user/{commentId:int}")]
+    [Authorize(AuthenticationSchemes = "Google")]
+    public async Task<IActionResult> DeleteCommentUser(int postId, int commentId)
+    {
+        var userId = CurrentUserId();
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { message = "Usuário não autenticado." });
+
+        try
+        {
+
+            var ok = await _postService.DeleteUserCommentAsync(postId, commentId, userId);
+            return ok ? NoContent() : NotFound();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
+    [HttpPut("{postId:int}/comments/user/{commentId:int}")]
+    [Authorize(AuthenticationSchemes = "Google")]
+    public async Task<ActionResult<CommentResponseDto>> EditComment(int postId, int commentId, [FromBody] CommentUpdateRequestDto request)
+    {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
+        var userId = CurrentUserId();
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { message = "Usuário não autenticado." });
+
+        try
+        {
+            var updated = await _postService.EditUserCommentAsync(postId, commentId, request, userId);
+            return updated is null ? NotFound() : Ok(updated);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
     }
 }

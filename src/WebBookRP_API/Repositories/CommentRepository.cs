@@ -15,7 +15,7 @@ public class CommentRepository(IDbConnection connection) : ICommentRepository
         await EnsureOpenAsync();
         var rows = await _connection.QueryAsync<Comment>(
             """
-            SELECT Id, PostId, `Text`, GuestName, UserId, AuthorLike, CreatedAt AS CreatedAtUtc
+            SELECT Id, PostId, `Text`, UserId, UserName, UserAvatar, AuthorLike, CreatedAt AS CreatedAtUtc
             FROM Comments
             WHERE PostId = @PostId
             ORDER BY CreatedAt ASC
@@ -29,7 +29,7 @@ public class CommentRepository(IDbConnection connection) : ICommentRepository
         await EnsureOpenAsync();
         return await _connection.QueryFirstOrDefaultAsync<Comment>(
             """
-            SELECT Id, PostId, `Text`, GuestName, UserId, AuthorLike, CreatedAt AS CreatedAtUtc
+            SELECT Id, PostId, `Text`, UserId, UserName, UserAvatar, AuthorLike, CreatedAt AS CreatedAtUtc
             FROM Comments
             WHERE Id = @Id
             """,
@@ -40,11 +40,10 @@ public class CommentRepository(IDbConnection connection) : ICommentRepository
     {
         await EnsureOpenAsync();
         const string sql = """
-            INSERT INTO Comments (PostId, `Text`, GuestName, UserId, AuthorLike)
-            VALUES (@PostId, @Text, @GuestName, @UserId, @AuthorLike);
+            INSERT INTO Comments (PostId, `Text`, UserId, UserName, UserAvatar, AuthorLike)
+            VALUES (@PostId, @Text, @UserId, @UserName, @UserAvatar, @AuthorLike);
             SELECT LAST_INSERT_ID();
             """;
-        // Nota: O CreatedAt é gerado automaticamente pelo banco (DEFAULT CURRENT_TIMESTAMP)
         return await _connection.QuerySingleAsync<int>(sql, comment);
     }
 
@@ -66,6 +65,19 @@ public class CommentRepository(IDbConnection connection) : ICommentRepository
             WHERE Id = @Id AND PostId = @PostId
             """,
             new { Id = commentId, PostId = postId, AuthorLike = authorLike });
+    }
+    public async Task<Comment?> GetCommentAsync(int postId, int commentId)
+    {
+        return await _connection.QueryFirstOrDefaultAsync<Comment>(
+            "SELECT * FROM Comments WHERE Id = @CommentId AND PostId = @PostId",
+            new { CommentId = commentId, PostId = postId });
+    }
+
+    public async Task<int> UpdateTextAsync(int postId, int commentId, string text)
+    {
+        return await _connection.ExecuteAsync(
+            "UPDATE Comments SET Text = @Text WHERE Id = @CommentId AND PostId = @PostId",
+            new { Text = text, CommentId = commentId, PostId = postId });
     }
 
     private async Task EnsureOpenAsync()

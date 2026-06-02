@@ -9,4 +9,6 @@ public interface ICommentRepository
     Task<int> InsertAsync(Comment comment);
     Task<int> DeleteAsync(int postId, int commentId);
     Task<int> UpdateAuthorLikeAsync(int postId, int commentId, bool authorLike);
+    Task<int> UpdateTextAsync(int postId, int commentId, string text);
+    Task<Comment?> GetCommentAsync(int postId, int commentId);
 }

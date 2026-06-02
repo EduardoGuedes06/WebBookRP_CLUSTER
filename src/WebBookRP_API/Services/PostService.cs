@@ -6,16 +6,25 @@ namespace WebBookRP_API.Services;
 
 public class PostService(IPostRepository postRepository, ICommentRepository commentRepository) : IPostService
 {
-    private const int MaxImageUrlChars = 4 * 1024 * 1024; // ~4 MB em texto (base64/data-uri)
+    private const int MaxImageUrlChars = 4 * 1024 * 1024;
 
     private readonly IPostRepository _postRepository = postRepository;
     private readonly ICommentRepository _commentRepository = commentRepository;
 
-    public async Task<IReadOnlyList<PostListItemResponseDto>> ListAsync(string? status, bool isAuthenticated)
+    public async Task<IReadOnlyList<PostDetailResponseDto>> ListAsync(string? status, bool isAuthenticated)
     {
         var effective = !isAuthenticated ? "published" : status;
         var posts = await _postRepository.ListAsync(effective);
-        return posts.Select(MapListItem).ToList();
+
+        var result = new List<PostDetailResponseDto>();
+
+        foreach (var post in posts)
+        {
+            var comments = await _commentRepository.GetByPostIdAsync(post.Id);
+            result.Add(MapDetail(post, comments.Select(MapComment).ToList()));
+        }
+            
+        return result;
     }
 
     public async Task<PostDetailResponseDto?> GetByIdAsync(int id, string? status, bool isAuthenticated)
@@ -107,7 +116,7 @@ public class PostService(IPostRepository postRepository, ICommentRepository comm
         return await _postRepository.ToggleLikeByIpAsync(postId, ipAddress);
     }
 
-    public async Task<CommentResponseDto?> AddCommentAsync(int postId, CommentCreateRequestDto request, string? userId)
+    public async Task<CommentResponseDto?> AddCommentAsync(int postId, CommentCreateRequestDto request, string userId, string userName, string? userAvatar)
     {
         var post = await _postRepository.GetByIdAsync(postId);
         if (post is null || !post.AllowComments)
@@ -116,16 +125,17 @@ public class PostService(IPostRepository postRepository, ICommentRepository comm
         if (post.Status != "published")
             return null;
 
-        if (string.IsNullOrWhiteSpace(userId) && string.IsNullOrWhiteSpace(request.GuestName))
-            throw new ArgumentException("Informe GuestName ou autentique-se para comentar.");
+        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(userName))
+            throw new ArgumentException("Usuário não autenticado.");
 
         var now = DateTime.UtcNow;
         var comment = new Comment
         {
             PostId = postId,
             Text = request.Text.Trim(),
-            GuestName = string.IsNullOrWhiteSpace(userId) ? request.GuestName?.Trim() : null,
             UserId = userId,
+            UserName = userName,
+            UserAvatar = userAvatar,
             AuthorLike = false,
             CreatedAtUtc = now
         };
@@ -201,14 +211,43 @@ public class PostService(IPostRepository postRepository, ICommentRepository comm
         };
     }
 
+    public async Task<bool> DeleteUserCommentAsync(int postId, int commentId, string userId)
+    {
+        var comment = await _commentRepository.GetCommentAsync(postId, commentId);
+        if (comment is null) return false;
+
+        if (comment.UserId != userId)
+            throw new UnauthorizedAccessException("Você não tem permissão para deletar este comentário.");
+
+        var affected = await _commentRepository.DeleteAsync(postId, commentId);
+        return affected > 0;
+    }
+
+    public async Task<CommentResponseDto?> EditUserCommentAsync(int postId, int commentId, CommentUpdateRequestDto request, string userId)
+    {
+        var comment = await _commentRepository.GetCommentAsync(postId, commentId);
+        if (comment is null) return null;
+
+        if (comment.UserId != userId)
+            throw new UnauthorizedAccessException("Você não tem permissão para editar este comentário.");
+
+        comment.Text = request.Text.Trim();
+        var affected = await _commentRepository.UpdateTextAsync(postId, commentId, comment.Text);
+
+        return affected > 0 ? MapComment(comment) : null;
+    }
+
     private static CommentResponseDto MapComment(Comment c) => new()
     {
         Id = c.Id,
         PostId = c.PostId,
         Text = c.Text,
-        GuestName = c.GuestName,
         UserId = c.UserId,
+        UserName = c.UserName,
+        UserAvatar = c.UserAvatar,
         AuthorLike = c.AuthorLike,
         CreatedAt = DateTime.SpecifyKind(c.CreatedAtUtc, DateTimeKind.Utc)
     };
+
+
 }

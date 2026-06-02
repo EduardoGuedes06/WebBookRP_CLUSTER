@@ -29,6 +29,23 @@ public class AuthController(IAuthService authService, IDatabaseSignatureReposito
         return Ok(result);
     }
 
+    [HttpPost("google")]
+    [AllowAnonymous]
+    public async Task<ActionResult<LoginResponseDto>> GoogleLogin([FromBody] GoogleLoginRequestDto request)
+    {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var ua = Request.Headers.UserAgent.ToString();
+
+        var result = await _authService.LoginWithGoogleAsync(request.Credential, ip, ua);
+        if (result is null)
+            return Unauthorized(new { message = "Falha na autenticação com o Google." });
+
+        return Ok(result);
+    }
+
     [HttpPost("logout")]
     [AllowAnonymous]
     public IActionResult Logout()
@@ -44,7 +61,7 @@ public class AuthController(IAuthService authService, IDatabaseSignatureReposito
     }
 
     [HttpGet("assinatura")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<object>> Assinatura(CancellationToken ct)
     {
         var signature = await _databaseSignatureRepository.GetCurrentDatabaseSignatureAsync(ct);

@@ -19,14 +19,14 @@ public class ServicesController(IServiceItemService serviceItemService) : Contro
     }
 
     [HttpGet("all")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<IReadOnlyList<ServiceResponseDto>>> GetAll()
     {
         return Ok(await _serviceItemService.GetAllForAdminAsync());
     }
 
     [HttpGet("{id:guid}")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<ServiceResponseDto>> GetById(Guid id)
     {
         var item = await _serviceItemService.GetByIdAsync(id);
@@ -34,7 +34,7 @@ public class ServicesController(IServiceItemService serviceItemService) : Contro
     }
 
     [HttpPost]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<ServiceResponseDto>> Create([FromBody] ServiceCreateRequestDto request)
     {
         if (!ModelState.IsValid)
@@ -45,7 +45,7 @@ public class ServicesController(IServiceItemService serviceItemService) : Contro
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<ServiceResponseDto>> Update(Guid id, [FromBody] ServiceUpdateRequestDto request)
     {
         if (!ModelState.IsValid)
@@ -56,7 +56,7 @@ public class ServicesController(IServiceItemService serviceItemService) : Contro
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var ok = await _serviceItemService.DeleteAsync(id);

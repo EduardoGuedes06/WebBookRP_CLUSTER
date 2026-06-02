@@ -45,6 +45,64 @@ public class AuthService(
         };
     }
 
+    public async Task<LoginResponseDto?> LoginWithGoogleAsync(string credential, string? ipAddress, string? userAgent)
+    {
+        if (string.IsNullOrWhiteSpace(credential))
+            return null;
+
+        try
+        {
+            using var client = new HttpClient();
+            var googleResponse = await client.GetAsync($"https://oauth2.googleapis.com/tokeninfo?id_token={credential}");
+
+            if (!googleResponse.IsSuccessStatusCode)
+            {
+                await LogAttemptAsync("Google: Token inválido, expirado ou forjado", false, ipAddress, userAgent);
+                return null;
+            }
+            var googleUser = await googleResponse.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+
+            if (googleUser == null || !googleUser.TryGetValue("email", out var email) || string.IsNullOrWhiteSpace(email))
+            {
+                await LogAttemptAsync("Google: Email ausente no token", false, ipAddress, userAgent);
+                return null;
+            }
+
+            googleUser.TryGetValue("name", out var name);
+            name ??= "Usuário Google";
+
+            var user = await _userRepository.GetByEmailAsync(email);
+
+            if (user is null)
+            {
+                user = new User
+                {
+                    Id = Guid.NewGuid(),
+                    Name = name,
+                    Email = email,
+                    PasswordHash = "EXTERNAL_GOOGLE_AUTH",
+                    Role = "Admin",
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _userRepository.InsertAsync(user);
+            }
+
+            await LogAttemptAsync(email, true, ipAddress, userAgent);
+
+            var token = CreateToken(user);
+            return new LoginResponseDto
+            {
+                Token = token,
+                TokenType = "Bearer",
+                ExpiresInMinutes = _jwt.ExpirationMinutes
+            };
+        }
+        catch {  } return null;
+    
+        
+    }
+
     public Task<SessionResponseDto> GetSessionAsync(ClaimsPrincipal principal)
     {
         if (principal.Identity?.IsAuthenticated != true)
@@ -87,7 +145,6 @@ public class AuthService(
         if (storedHash.StartsWith("$2", StringComparison.Ordinal))
             return BCrypt.Net.BCrypt.Verify(plain, storedHash);
 
-        // Fallback inseguro apenas para migração legada (evite em produção)
         return string.Equals(plain, storedHash, StringComparison.Ordinal);
     }
 

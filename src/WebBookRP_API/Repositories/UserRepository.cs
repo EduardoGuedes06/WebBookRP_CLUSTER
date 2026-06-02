@@ -23,6 +23,17 @@ public class UserRepository(IDbConnection connection) : IUserRepository
             new { Email = email });
     }
 
+    public async Task InsertAsync(User user)
+    {
+        await EnsureOpenAsync();
+        await _connection.ExecuteAsync(
+            """
+            INSERT INTO Users (Id, Name, Email, PasswordHash, Role, CreatedAt)
+            VALUES (@Id, @Name, @Email, @PasswordHash, @Role, @CreatedAt)
+            """,
+            user);
+    }
+
     private async Task EnsureOpenAsync()
     {
         if (_connection.State != ConnectionState.Open)

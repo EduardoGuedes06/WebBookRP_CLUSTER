@@ -34,7 +34,7 @@ public class LeadsController(ILeadService leadService) : ControllerBase
     }
 
     [HttpGet]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<LeadsPagedResponseDto>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -45,7 +45,7 @@ public class LeadsController(ILeadService leadService) : ControllerBase
     }
 
     [HttpGet("{id:int}")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<LeadResponseDto>> GetById(int id)
     {
         var lead = await _leadService.GetByIdAsync(id);
@@ -53,7 +53,7 @@ public class LeadsController(ILeadService leadService) : ControllerBase
     }
 
     [HttpPatch("{id:int}/status")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<IActionResult> PatchStatus(int id, [FromBody] LeadStatusPatchRequestDto request)
     {
         if (!ModelState.IsValid)
@@ -71,7 +71,7 @@ public class LeadsController(ILeadService leadService) : ControllerBase
     }
 
     [HttpPatch("{id:int}/notes")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<IActionResult> PatchNotes(int id, [FromBody] LeadNotesPatchRequestDto request)
     {
         var ok = await _leadService.UpdateNotesAsync(id, request.Notes);
@@ -79,7 +79,7 @@ public class LeadsController(ILeadService leadService) : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<LeadResponseDto>> Update(int id, [FromBody] LeadUpdateRequestDto request)
     {
         if (!ModelState.IsValid)
@@ -101,7 +101,7 @@ public class LeadsController(ILeadService leadService) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<IActionResult> Delete(int id)
     {
         var ok = await _leadService.DeleteAsync(id);

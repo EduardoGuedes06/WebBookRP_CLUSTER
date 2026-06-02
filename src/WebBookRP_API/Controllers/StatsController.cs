@@ -7,7 +7,7 @@ namespace WebBookRP_API.Controllers;
 
 [ApiController]
 [Route("stats")]
-[Authorize]
+[Authorize(AuthenticationSchemes = "Bearer")]
 public class StatsController(IConfigService configService) : ControllerBase
 {
     private readonly IConfigService _configService = configService;

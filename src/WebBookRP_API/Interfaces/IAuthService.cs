@@ -7,4 +7,5 @@ public interface IAuthService
 {
     Task<LoginResponseDto?> LoginAsync(LoginRequestDto request, string? ipAddress, string? userAgent);
     Task<SessionResponseDto> GetSessionAsync(ClaimsPrincipal user);
+    Task<LoginResponseDto?> LoginWithGoogleAsync(string credential, string? ipAddress, string? userAgent);
 }

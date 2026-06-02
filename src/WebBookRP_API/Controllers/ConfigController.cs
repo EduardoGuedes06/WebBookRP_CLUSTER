@@ -17,8 +17,8 @@ public class ConfigController(IConfigService configService) : ControllerBase
         return Ok(await _configService.GetSystemAsync());
     }
 
-    [HttpPut("system")]
-    [Authorize]
+    [HttpPost("system")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<SettingResponseDto>> PutSystem([FromBody] SettingUpdateRequestDto request)
     {
         return Ok(await _configService.UpdateSystemAsync(request.Value));
@@ -30,8 +30,8 @@ public class ConfigController(IConfigService configService) : ControllerBase
         return Ok(await _configService.GetHomeAsync());
     }
 
-    [HttpPut("home")]
-    [Authorize]
+    [HttpPost("home")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public async Task<ActionResult<SettingResponseDto>> PutHome([FromBody] SettingUpdateRequestDto request)
     {
         return Ok(await _configService.UpdateHomeAsync(request.Value));
